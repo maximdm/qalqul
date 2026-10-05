@@ -13,6 +13,7 @@ import 'package:qalqul/shared/providers/shell_providers.dart';
 import 'package:qalqul/shared/providers/shortcut_provider.dart';
 import 'package:qalqul/shared/services/quick_actions_service.dart';
 
+import 'helpers/fake_data.dart';
 import 'helpers/fake_settings.dart';
 
 /// Records what the service asked the platform for, and lets a test deliver a
@@ -183,6 +184,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ...emptyDataProviders(),
             settingsProvider.overrideWith(
               () => FakeSettings(
                 onboarded ? {SettingKeys.onboardingDone: 'true'} : {},

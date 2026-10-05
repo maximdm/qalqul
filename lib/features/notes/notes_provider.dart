@@ -29,6 +29,9 @@ class NotesNotifier extends Notifier<NotesState> {
 
   Future<void> _load() async {
     final notes = await _repo.getAll();
+    // The provider can be disposed while the query is in flight (screen
+    // teardown, a test container going away); reading state then throws.
+    if (!ref.mounted) return;
     // Element-wise: `List ==` is identity-based, so comparing the lists
     // directly would always report a change and rebuild every note consumer
     // on each load.

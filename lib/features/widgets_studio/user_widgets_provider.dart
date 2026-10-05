@@ -17,7 +17,11 @@ class UserWidgetsNotifier extends Notifier<List<UserWidget>> {
   }
 
   Future<void> _load() async {
-    state = await _repo.getAll();
+    final items = await _repo.getAll();
+    // The provider can be disposed while the query is in flight (screen
+    // teardown, a test container going away); writing state then throws.
+    if (!ref.mounted) return;
+    state = items;
   }
 
   Future<void> add(UserWidget w) async {

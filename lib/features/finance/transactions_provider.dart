@@ -18,6 +18,9 @@ class TransactionsNotifier extends Notifier<List<AppTransaction>> {
 
   Future<void> _load() async {
     final items = await _repo.getAll();
+    // The provider can be disposed while the query is in flight (screen
+    // teardown, a test container going away); writing state then throws.
+    if (!ref.mounted) return;
     state = items;
   }
 
