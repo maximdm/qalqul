@@ -48,6 +48,20 @@ CurrencyInfo currencyInfo(String code) => supportedCurrencies.firstWhere(
 bool isSupportedCurrency(String code) =>
     supportedCurrencies.any((c) => c.code == code);
 
+/// Points `intl`'s formatters at [languageTag] (e.g. `es`, `en`).
+///
+/// Every formatter in the app is built without an explicit locale, so they all
+/// resolve through `Intl.defaultLocale`, which `intl` otherwise initialises
+/// from the *operating system* language. That leaves a Spanish UI full of
+/// `1,234,567.89` and `Mar 4, 2026` on an English machine. Call this whenever
+/// the app locale changes, before anything formats.
+///
+/// Takes a bare language tag rather than a `Locale` to keep this file free of
+/// Flutter imports and unit-testable without a binding.
+void useNumberLocale(String languageTag) {
+  Intl.defaultLocale = languageTag;
+}
+
 /// Formats [v] in [currency] using `intl`, honouring the currency's fraction
 /// digits (e.g. JPY has none).
 String formatMoney(double v, {String currency = defaultCurrency}) {

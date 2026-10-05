@@ -6,6 +6,57 @@ import 'package:sqflite/sqflite.dart';
 
 import 'package:qalqul/core/db/database_helper.dart';
 
+/// Leading characters a spreadsheet reads as the start of a formula.
+final _formulaPrefix = RegExp(r'^[=+\-@\t\r]');
+
+/// Renders [value] as one RFC 4180 CSV field.
+///
+/// Quotes inside a quoted field must be doubled, otherwise a note such as
+/// `He said "hi", loudly` unquotes into two columns and silently shifts every
+/// field to its right.
+///
+/// Leading `=`, `+`, `-` and `@` are neutralised with an apostrophe so a
+/// spreadsheet shows the text instead of evaluating it. Genuine numbers are
+/// left alone so `amount` stays numeric.
+String csvCell(Object? value) {
+  final v = value?.toString() ?? '';
+  final guarded = (v.isNotEmpty && num.tryParse(v) == null && _formulaPrefix.hasMatch(v))
+      ? "'$v"
+      : v;
+  final quote = guarded.contains(',') ||
+      guarded.contains('"') ||
+      guarded.contains('\n') ||
+      guarded.contains('\r');
+  return quote ? '"${guarded.replaceAll('"', '""')}"' : guarded;
+}
+
+/// The transaction columns, in export order.
+const transactionCsvHeaders = [
+  'id',
+  'kind',
+  'amount',
+  'currency',
+  'category',
+  'date',
+  'note',
+  'is_recurring',
+  'recurrence',
+  'next_due',
+];
+
+/// Renders [rows] as a CSV document.
+///
+/// Pure so it can be unit-tested without going through a file picker.
+String buildTransactionsCsv(Iterable<Map<String, Object?>> rows) {
+  final buffer = StringBuffer()..writeln(transactionCsvHeaders.join(','));
+  for (final row in rows) {
+    buffer.writeln(
+      transactionCsvHeaders.map((h) => csvCell(row[h])).join(','),
+    );
+  }
+  return buffer.toString();
+}
+
 /// Exports and imports the full local database as a single JSON file.
 ///
 /// Returns a short status code: `ok`, `cancelled`, `bad`, or `error: <msg>`.
@@ -95,34 +146,11 @@ class BackupService {
     try {
       final db = await DatabaseHelper.instance.database;
       final rows = await db.query('transactions', orderBy: 'date DESC');
-      const headers = [
-        'id',
-        'kind',
-        'amount',
-        'currency',
-        'category',
-        'date',
-        'note',
-        'is_recurring',
-        'recurrence',
-        'next_due',
-      ];
-      final buffer = StringBuffer()..writeln(headers.join(','));
-      for (final r in rows) {
-        buffer.writeln(
-          headers
-              .map((h) {
-                final v = r[h]?.toString() ?? '';
-                return v.contains(',') || v.contains('"') ? '"$v"' : v;
-              })
-              .join(','),
-        );
-      }
 
       final uri = await FilePicker.saveFile(
         dialogTitle: 'Export transactions (CSV)',
         fileName: 'qalqul-transactions.csv',
-        bytes: Uint8List.fromList(utf8.encode(buffer.toString())),
+        bytes: Uint8List.fromList(utf8.encode(buildTransactionsCsv(rows))),
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );

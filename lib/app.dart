@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qalqul/core/theme.dart';
+import 'package:qalqul/core/utils/money.dart';
 import 'package:qalqul/features/calculator/calculator_provider.dart';
 import 'package:qalqul/features/calculator/calculator_screen.dart';
 import 'package:qalqul/features/finance/finance_screen.dart';
@@ -27,6 +28,13 @@ class QalqulApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
+    // Before any child can format a number or date, and re-run whenever the
+    // user picks a different language. `locale` is watched, so a change
+    // re-enters here ahead of the subtree that formats money. A null locale
+    // means "follow the device", which is also what MaterialApp will use.
+    final numberLocale =
+        locale ?? WidgetsBinding.instance.platformDispatcher.locale;
+    useNumberLocale(numberLocale.toLanguageTag());
     return MaterialApp(
       // Resolved from a context below MaterialApp so Localizations exists.
       onGenerateTitle: (context) => context.l10n.appTitle,

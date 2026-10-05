@@ -22,21 +22,16 @@ class DatabaseHelper {
 
   /// Test-only hook: point the singleton at an isolated in-memory database so
   /// repository tests don't touch the on-device file DB.
+  ///
+  /// Reuses [_onCreate] rather than restating the table list, so a new domain
+  /// can't be added to the app schema and quietly missed by the test schema.
   static Future<void> useTestDatabase() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     instance._database = await openDatabase(
       inMemoryDatabasePath,
       version: _dbVersion,
-      onCreate: (db, _) async {
-        await instance._createNotes(db);
-        await instance._createTransactions(db);
-        await instance._createInvestments(db);
-        await instance._createBudgets(db);
-        await instance._createUserWidgets(db);
-        await instance._createFxRates(db);
-        await instance._createAppSettings(db);
-      },
+      onCreate: instance._onCreate,
     );
   }
 
