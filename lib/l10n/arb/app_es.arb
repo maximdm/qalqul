@@ -127,6 +127,10 @@
   "budgetAdd": "Añadir presupuesto",
   "budgetEdit": "Editar presupuesto",
   "budgetTargetField": "Importe objetivo",
+
+  "moneyPartialTotal": "Total parcial",
+  "moneyPartialTotalBody": "{amount} no se pudo convertir y no está incluido. Añade un tipo de cambio para incluirlo.",
+  "moneyMissingRates": "Sin tipo de cambio para {currencies}",
   "budgetSavedField": "Ahorrado hasta ahora",
   "budgetDefaultName": "Objetivo",
   "budgetSpent": "Gastado {amount}",

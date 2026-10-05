@@ -385,6 +385,19 @@ class L10nEn extends L10n {
   String get budgetTargetField => 'Target amount';
 
   @override
+  String get moneyPartialTotal => 'Partial total';
+
+  @override
+  String moneyPartialTotalBody(String amount) {
+    return '$amount could not be converted and is not included. Add an exchange rate to include it.';
+  }
+
+  @override
+  String moneyMissingRates(String currencies) {
+    return 'No exchange rate for $currencies';
+  }
+
+  @override
   String get budgetSavedField => 'Saved so far';
 
   @override

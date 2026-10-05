@@ -82,6 +82,50 @@ class MoneyAmount {
   String format() => formatMoney(amount, currency: currency);
 }
 
+/// The result of combining amounts that may be held in several currencies.
+///
+/// [amount] is expressed in [currency] and contains **only** the money that
+/// could be converted into it. Anything left out is reported in [unconverted],
+/// keyed by its original currency, so a partial total is visible instead of
+/// being padded with numbers from other currencies.
+class MoneyTotal {
+  final double amount;
+  final String currency;
+
+  /// Source currency → amount that could not be converted into [currency].
+  final Map<String, double> unconverted;
+
+  const MoneyTotal(
+    this.amount,
+    this.currency, {
+    this.unconverted = const {},
+  });
+
+  /// `true` when every contributing amount was convertible.
+  bool get isComplete => unconverted.isEmpty;
+
+  /// Subtracts [other] — expected to be in the same currency — carrying over
+  /// anything either side could not convert.
+  MoneyTotal minus(MoneyTotal other) => MoneyTotal(
+        amount - other.amount,
+        currency,
+        unconverted: {...unconverted, ...other.unconverted},
+      );
+
+  /// Currencies that are missing from the total, sorted for stable display.
+  List<String> get missingCurrencies => unconverted.keys.toList()..sort();
+
+  bool get isEmpty => amount == 0 && unconverted.isEmpty;
+
+  String format() => formatMoney(amount, currency: currency);
+
+  /// Single-line summary of what is missing, for tooltips and subtitles.
+  String describeMissing() => missingCurrencies
+      .map((code) =>
+          '${formatMoney(unconverted[code]!, currency: code)} $code')
+      .join(', ');
+}
+
 /// Immutable set of manual FX rates with pair lookup and conversion.
 class FxRates {
   final Map<String, double> _byPair;
@@ -117,8 +161,9 @@ class FxRates {
 
   /// Converts [amount] from [from] into [to].
   ///
-  /// Tries the direct pair first, then a single pivot (ideally [via]) so two
-  /// stored rates such as `USD/EUR` and `USD/GBP` can produce `EUR/GBP`.
+  /// Uses the direct pair when one is stored, otherwise walks the rate graph to
+  /// find the fewest-hops path, so a chain such as `EUR/GBP` + `GBP/JPY` still
+  /// reaches `EUR/JPY`. [via] is tried first when supplied.
   /// Returns the original amount with `converted: false` when no path exists.
   MoneyAmount convert(
     double amount,
@@ -128,28 +173,79 @@ class FxRates {
   }) {
     final f = from.toUpperCase();
     final t = to.toUpperCase();
-    if (f == t) return MoneyAmount(amount, t);
+    final rate = _searchRate(f, t, via);
+    if (rate == null) return MoneyAmount(amount, f, converted: false);
+    return MoneyAmount(amount * rate, t);
+  }
 
-    final directRate = direct(f, t);
-    if (directRate != null) {
-      return MoneyAmount(amount * directRate, t);
-    }
-
-    // Pivot through a shared currency: from → pivot → to.
-    final pivots = <String>[
-      if (via != null) via.toUpperCase(),
-      ..._currenciesIn(f),
-    ];
-    for (final pivot in pivots.toSet()) {
-      if (pivot == f || pivot == t) continue;
-      final leg1 = direct(f, pivot);
-      final leg2 = direct(pivot, t);
-      if (leg1 != null && leg2 != null) {
-        return MoneyAmount(amount / leg1 * leg2, t);
+  /// Combines amounts held in several currencies into a single figure in [to].
+  ///
+  /// Anything with no conversion path is left out of the total and reported in
+  /// [MoneyTotal.unconverted], keyed by its own currency. A total is therefore
+  /// never a sum of mismatched units: either a currency converted, or the gap
+  /// is visible.
+  MoneyTotal sum(
+    Iterable<({double amount, String currency})> entries,
+    String to, {
+    String? via,
+  }) {
+    final target = to.toUpperCase();
+    var total = 0.0;
+    final missing = <String, double>{};
+    for (final e in entries) {
+      final converted = convert(e.amount, e.currency, target, via: via);
+      if (converted.converted) {
+        total += converted.amount;
+      } else {
+        final code = converted.currency;
+        missing[code] = (missing[code] ?? 0) + converted.amount;
       }
     }
+    return MoneyTotal(total, target, unconverted: Map.unmodifiable(missing));
+  }
 
-    return MoneyAmount(amount, f, converted: false);
+  /// Bounds the path search. The supported currency set is small, so four legs
+  /// is generous; the cap only stops a pathological rate table from costing
+  /// more than it is worth.
+  static const _maxHops = 4;
+
+  /// Accumulated rate for `from` → `to`, or `null` when unreachable.
+  ///
+  /// Breadth-first, so the result is the shortest-hop path. Ties break on
+  /// insertion order, which keeps the chosen path deterministic; [preferVia] is
+  /// queued ahead of everything else so an explicit pivot still wins.
+  double? _searchRate(String from, String to, String? preferVia) {
+    if (from == to) return 1;
+    final direct = _byPair['$from/$to'];
+    if (direct != null) return direct;
+
+    // Each entry is (code, rate from `from`, hops used).
+    final queue = <(String, double, int)>[];
+    final seen = <String>{from};
+
+    void seed(String code) {
+      if (code == from || code == to) return;
+      final rate = _byPair['$from/$code'];
+      if (rate == null || !seen.add(code)) return;
+      queue.add((code, rate, 1));
+    }
+
+    if (preferVia != null) seed(preferVia.toUpperCase());
+    for (final code in _currenciesIn(from)) {
+      seed(code);
+    }
+
+    for (var head = 0; head < queue.length; head++) {
+      final (code, rate, hops) = queue[head];
+      if (code == to) return rate;
+      if (hops >= _maxHops) continue;
+      for (final next in _currenciesIn(code)) {
+        final leg = _byPair['$code/$next'];
+        if (leg == null || !seen.add(next)) continue;
+        queue.add((next, rate * leg, hops + 1));
+      }
+    }
+    return null;
   }
 
   Iterable<String> _currenciesIn(String code) sync* {

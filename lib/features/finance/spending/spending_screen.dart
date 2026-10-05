@@ -41,12 +41,21 @@ class SpendingScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     final byCategory = <String, double>{};
+    // Chart slices only make sense for amounts that actually converted, so a
+    // currency with no rate path contributes no bar; [total] below is the one
+    // that reports the gap.
     for (final t in spending) {
-      byCategory[t.category] = (byCategory[t.category] ?? 0) +
-          toBase(ref, t.amount, from: t.currency);
+      final converted = convertWith(
+        ref.watch(currencyProvider),
+        t.amount,
+        from: t.currency,
+      );
+      if (!converted.converted) continue;
+      byCategory[t.category] =
+          (byCategory[t.category] ?? 0) + converted.amount;
     }
     final cats = byCategory.keys.toList();
-    final total = byCategory.values.fold(0.0, (a, b) => a + b);
+    final total = sumRecords(ref, spending, (t) => t.currency, (t) => t.amount);
     final chartColors = chartColorsOf(theme.colorScheme);
 
     return Scaffold(
@@ -74,7 +83,22 @@ class SpendingScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(l10n.spendingSpent, style: theme.textTheme.bodySmall),
-                        MoneyText(total, style: theme.textTheme.titleLarge),
+                        MoneyTotalText(
+                          total,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        if (!total.isComplete)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              context.l10n.moneyMissingRates(
+                                total.missingCurrencies.join(', '),
+                              ),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: 8),
                         SizedBox(
                           height: 140,

@@ -128,6 +128,78 @@ void main() {
     });
   });
 
+  group('FxRates.sum', () {
+    test('combines records across currencies into one base total', () {
+      final rates = FxRates.fromList(const [
+        FxRate(base: 'USD', quote: 'EUR', rate: 0.5, asOf: 1),
+      ]);
+      final total = rates.sum(
+        const [
+          (amount: 10.0, currency: 'USD'),
+          (amount: 20.0, currency: 'EUR'),
+        ],
+        'USD',
+        via: 'USD',
+      );
+      expect(total.amount, 50); // 10 USD + (20 EUR / 0.5)
+      expect(total.currency, 'USD');
+      expect(total.isComplete, isTrue);
+      expect(total.isEmpty, isFalse);
+    });
+
+    test('excludes unconvertible amounts and reports them', () {
+      final rates = FxRates.fromList(const [
+        FxRate(base: 'USD', quote: 'EUR', rate: 0.5, asOf: 1),
+      ]);
+      final total = rates.sum(
+        const [
+          (amount: 10.0, currency: 'USD'),
+          (amount: 99.0, currency: 'JPY'),
+        ],
+        'USD',
+        via: 'USD',
+      );
+      // 99 JPY is absent from the total rather than silently added as 99 USD.
+      expect(total.amount, 10);
+      expect(total.isComplete, isFalse);
+      expect(total.unconverted, {'JPY': 99.0});
+      expect(total.missingCurrencies, ['JPY']);
+      expect(total.describeMissing(), contains('JPY'));
+    });
+
+    test('an empty input list yields an empty total', () {
+      final total = FxRates.empty.sum(const [], 'USD');
+      expect(total.amount, 0);
+      expect(total.isEmpty, isTrue);
+      expect(total.isComplete, isTrue);
+    });
+
+    test('nothing convertible is not the same as nothing at all', () {
+      final total =
+          FxRates.empty.sum(const [(amount: 5.0, currency: 'JPY')], 'USD');
+      expect(total.amount, 0);
+      // Zero convertible value, but the 5 JPY still has to be flagged.
+      expect(total.isEmpty, isFalse);
+      expect(total.isComplete, isFalse);
+      expect(total.unconverted, {'JPY': 5.0});
+    });
+
+    test('minus keeps unconverted amounts from both sides', () {
+      final rates = FxRates.fromList(const [
+        FxRate(base: 'USD', quote: 'EUR', rate: 0.5, asOf: 1),
+      ]);
+      final assets = rates.sum(
+        const [(amount: 100.0, currency: 'USD'), (amount: 7.0, currency: 'JPY')],
+        'USD',
+      );
+      final credit = rates.sum(const [(amount: 40.0, currency: 'USD')], 'USD');
+      final net = assets.minus(credit);
+      expect(net.amount, 60);
+      expect(net.unconverted, {'JPY': 7.0});
+      expect(net.isComplete, isFalse);
+    });
+  });
+
   group('FxRatesNotifier', () {
     test('ignores self-pairs and non-positive rates', () async {
       final c = await container();

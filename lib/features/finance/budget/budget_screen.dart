@@ -23,12 +23,17 @@ class BudgetScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     // Spend is only meaningful over a period: sum the current month per category.
+    // A currency with no rate path is skipped rather than added in its own
+    // units, which would otherwise understate progress against the target.
     final window = monthWindow(DateTime.now());
     final spentByCategory = <String, double>{};
     for (final t in transactions.where((t) => t.kind == 'spending')) {
       if (!within(t.date, window)) continue;
-      spentByCategory[t.category] = (spentByCategory[t.category] ?? 0) +
-          toBase(ref, t.amount, from: t.currency);
+      final converted = convertWith(ref.watch(currencyProvider), t.amount,
+          from: t.currency);
+      if (!converted.converted) continue;
+      spentByCategory[t.category] =
+          (spentByCategory[t.category] ?? 0) + converted.amount;
     }
 
     return Scaffold(

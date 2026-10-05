@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:qalqul/core/models/user_widget.dart';
+import 'package:qalqul/core/utils/money.dart';
 import 'package:qalqul/core/utils/periods.dart';
 import 'package:qalqul/features/calculator/calculator_screen.dart';
 import 'package:qalqul/features/finance/currency_provider.dart';
@@ -37,16 +38,14 @@ class UserWidgetCard extends ConsumerWidget {
 
   /// Sums `amountOf` across [items], converting each record out of its own
   /// currency first so mixed-currency totals add up in the base currency.
-  double _sumInBase<T>(
+  /// Delegates to `sumRecords`, which reports any currency it could not convert.
+  MoneyTotal _sumInBase<T>(
     Iterable<T> items,
     WidgetRef ref,
     String Function(T) currencyOf,
     double Function(T) amountOf,
   ) =>
-      items.fold<double>(
-        0,
-        (acc, item) => acc + toBase(ref, amountOf(item), from: currencyOf(item)),
-      );
+      sumRecords(ref, items, currencyOf, amountOf);
 
   Widget _noteSummary(BuildContext context, WidgetRef ref) {
     final notes = ref.watch(notesProvider).notes;
@@ -91,10 +90,12 @@ class UserWidgetCard extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(l10n.widgetInvested(formatInBase(ref, total))),
+        // Already combined into the base currency, so format directly; the
+        // authoritative partial-total warning lives on the finance screens.
+        Text(l10n.widgetInvested(total.format())),
         const SizedBox(height: 6),
         Text(
-          l10n.widgetCredit(formatInBase(ref, credit)),
+          l10n.widgetCredit(credit.format()),
           style: TextStyle(color: Theme.of(context).colorScheme.error),
         ),
       ],
@@ -116,7 +117,7 @@ class UserWidgetCard extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(context.l10n.widgetSpent, style: theme.textTheme.bodySmall),
-        MoneyText(total, style: theme.textTheme.titleLarge),
+        MoneyTotalText(total, style: theme.textTheme.titleLarge),
       ],
     );
   }
@@ -131,18 +132,21 @@ class UserWidgetCard extends ConsumerWidget {
       (t) => t.currency,
       (t) => t.amount,
     );
+    // A currency missing from either side makes the subtraction meaningless, so
+    // `minus` carries the unconverted amounts through to the warning.
+    final net = assets.minus(credit);
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(context.l10n.kindNetWorth, style: theme.textTheme.bodySmall),
-        MoneyText(assets - credit, style: theme.textTheme.titleLarge),
+        MoneyTotalText(net, style: theme.textTheme.titleLarge),
         const SizedBox(height: 6),
         Text(
           context.l10n.widgetAssetsCredit(
-            formatInBase(ref, assets),
-            formatInBase(ref, credit),
+            formatInBase(ref, assets.amount),
+            formatInBase(ref, credit.amount),
           ),
           style: theme.textTheme.labelSmall,
         ),
@@ -173,7 +177,7 @@ class UserWidgetCard extends ConsumerWidget {
           context.l10n.widgetMonthSpend,
           style: theme.textTheme.bodySmall,
         ),
-        MoneyText(total, style: theme.textTheme.titleLarge),
+        MoneyTotalText(total, style: theme.textTheme.titleLarge),
         if (category.isNotEmpty) ...[
           const SizedBox(height: 4),
           Text(category, style: theme.textTheme.labelSmall),
@@ -187,8 +191,10 @@ class UserWidgetCard extends ConsumerWidget {
     if (inv.isEmpty) return Text(context.l10n.widgetPortfolioEmpty);
     final value = _sumInBase(inv, ref, (i) => i.currency, (i) => i.currentValue);
     final cost = _sumInBase(inv, ref, (i) => i.currency, (i) => i.principal);
-    final gain = value - cost;
-    final pct = cost > 0 ? gain / cost * 100 : 0.0;
+    // Gain and percentage come off the converted figures only; a holding with
+    // no rate path is flagged on [value] instead of skewing the return.
+    final gain = value.amount - cost.amount;
+    final pct = cost.amount > 0 ? gain / cost.amount * 100 : 0.0;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Column(
@@ -199,7 +205,7 @@ class UserWidgetCard extends ConsumerWidget {
           context.l10n.widgetPortfolioValue,
           style: theme.textTheme.bodySmall,
         ),
-        MoneyText(value, style: theme.textTheme.titleLarge),
+        MoneyTotalText(value, style: theme.textTheme.titleLarge),
         const SizedBox(height: 4),
         Row(
           mainAxisSize: MainAxisSize.min,

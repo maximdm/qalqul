@@ -37,10 +37,7 @@ class CreditScreen extends ConsumerWidget {
     final all = ref.watch(transactionsProvider);
     final credits = all.where((t) => t.kind == 'credit').toList();
     final theme = Theme.of(context);
-    final owed = credits.fold<double>(
-      0,
-      (s, t) => s + toBase(ref, t.amount, from: t.currency),
-    );
+    final owed = sumRecords(ref, credits, (t) => t.currency, (t) => t.amount);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -72,7 +69,7 @@ class CreditScreen extends ConsumerWidget {
                       children: [
                         Text(l10n.creditOutstanding,
                             style: theme.textTheme.bodySmall),
-                        MoneyText(owed, style: theme.textTheme.titleLarge),
+                        MoneyTotalText(owed, style: theme.textTheme.titleLarge),
                       ],
                     ),
                   ),

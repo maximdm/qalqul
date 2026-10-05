@@ -781,6 +781,24 @@ abstract class L10n {
   /// **'Target amount'**
   String get budgetTargetField;
 
+  /// Tooltip on a combined total that is missing some currencies
+  ///
+  /// In en, this message translates to:
+  /// **'Partial total'**
+  String get moneyPartialTotal;
+
+  /// No description provided for @moneyPartialTotalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} could not be converted and is not included. Add an exchange rate to include it.'**
+  String moneyPartialTotalBody(String amount);
+
+  /// No description provided for @moneyMissingRates.
+  ///
+  /// In en, this message translates to:
+  /// **'No exchange rate for {currencies}'**
+  String moneyMissingRates(String currencies);
+
   /// No description provided for @budgetSavedField.
   ///
   /// In en, this message translates to:

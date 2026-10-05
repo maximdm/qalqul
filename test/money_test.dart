@@ -72,11 +72,33 @@ void main() {
     });
 
     test('pivots through a shared currency when no direct pair exists', () {
-      // 10 EUR -> 5 USD -> 1.25 GBP, using the USD/EUR and USD/GBP rates.
+      // 10 EUR -> 20 USD -> 5 GBP, using the USD/EUR and USD/GBP rates.
+      // Each hop multiplies: EUR/USD is 2.0 and USD/GBP is 0.25, so the
+      // composite rate is 0.5. Dividing the first leg would understate the
+      // result by leg1^2 (it used to report 1.25 here).
       final result = rates.convert(10, 'EUR', 'GBP');
       expect(result.converted, isTrue);
-      expect(result.amount, closeTo(1.25, 1e-9));
+      expect(result.amount, closeTo(5.0, 1e-9));
       expect(result.currency, 'GBP');
+    });
+
+    test('pivot conversion is symmetric', () {
+      expect(rates.convert(10, 'EUR', 'GBP').amount, closeTo(5.0, 1e-9));
+      expect(rates.convert(10, 'GBP', 'EUR').amount, closeTo(20.0, 1e-9));
+      // Round-tripping a converted amount must return the original.
+      final there = rates.convert(10, 'EUR', 'GBP');
+      final back = rates.convert(there.amount, 'GBP', 'EUR');
+      expect(back.amount, closeTo(10.0, 1e-9));
+    });
+
+    test('hops through more than one intermediate currency', () {
+      // No pair links JPY to EUR except through USD and GBP.
+      final chain = FxRates.fromList(const [
+        FxRate(base: 'EUR', quote: 'USD', rate: 2.0, asOf: 0),
+        FxRate(base: 'USD', quote: 'GBP', rate: 0.5, asOf: 0),
+        FxRate(base: 'GBP', quote: 'JPY', rate: 300.0, asOf: 0),
+      ]);
+      expect(chain.convert(2.0, 'EUR', 'JPY').amount, closeTo(600.0, 1e-9));
     });
 
     test('prefers the requested pivot currency', () {

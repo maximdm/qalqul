@@ -159,6 +159,17 @@
   "budgetAdd": "Add budget",
   "budgetEdit": "Edit budget",
   "budgetTargetField": "Target amount",
+
+  "moneyPartialTotal": "Partial total",
+  "@moneyPartialTotal": { "description": "Tooltip on a combined total that is missing some currencies" },
+  "moneyPartialTotalBody": "{amount} could not be converted and is not included. Add an exchange rate to include it.",
+  "@moneyPartialTotalBody": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "moneyMissingRates": "No exchange rate for {currencies}",
+  "@moneyMissingRates": {
+    "placeholders": { "currencies": { "type": "String" } }
+  },
   "budgetSavedField": "Saved so far",
   "budgetDefaultName": "Goal",
   "budgetSpent": "Spent {amount}",

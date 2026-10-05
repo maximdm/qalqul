@@ -103,3 +103,31 @@ MoneyAmount convertWith(
       currency.base,
       via: currency.base,
     );
+
+/// Combines amounts held in several currencies into the base currency.
+///
+/// Returns a [MoneyTotal], so a caller can tell a complete total from one that
+/// is missing currencies it has no rate for. Use this instead of folding
+/// [toBase] over records: adding raw numbers together is only valid when every
+/// rate resolves.
+MoneyTotal sumInBase(
+  WidgetRef ref,
+  Iterable<({double amount, String currency})> entries,
+) {
+  final currency = ref.watch(currencyProvider);
+  return currency.rates.sum(entries, currency.base, via: currency.base);
+}
+
+/// [sumInBase] over a list of domain records, reading each record's own
+/// currency. This is the shape every finance screen needs: sum one field of a
+/// list of models, converted per record.
+MoneyTotal sumRecords<T>(
+  WidgetRef ref,
+  Iterable<T> items,
+  String Function(T) currencyOf,
+  double Function(T) amountOf,
+) =>
+    sumInBase(
+      ref,
+      items.map((e) => (amount: amountOf(e), currency: currencyOf(e))),
+    );

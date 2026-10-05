@@ -19,17 +19,14 @@ class InvestmentsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final investments = ref.watch(investmentsProvider);
-    // Totals are converted per holding so mixed-currency portfolios add up in
-    // the user's base currency.
-    double sum(double Function(Investment) pick) => investments.fold<double>(
-          0,
-          (acc, i) => acc + toBase(ref, pick(i), from: i.currency),
-        );
-
-    final total = sum((i) => i.currentValue);
-    final principal = sum((i) => i.principal);
-    final gain = total - principal;
-    final pct = principal > 0 ? (gain / principal) * 100 : 0.0;
+    // Totals combine holdings across currencies, so they are built with
+    // `sumRecords`: anything without an FX path is reported rather than added
+    // in its original units.
+    final total = sumRecords(ref, investments, (i) => i.currency, (i) => i.currentValue);
+    final principal =
+        sumRecords(ref, investments, (i) => i.currency, (i) => i.principal);
+    final gain = total.amount - principal.amount;
+    final pct = principal.amount > 0 ? (gain / principal.amount) * 100 : 0.0;
 
     final theme = Theme.of(context);
     final chartColors = chartColorsOf(theme.colorScheme);
@@ -61,7 +58,7 @@ class InvestmentsScreen extends ConsumerWidget {
                           children: [
                             Text(l10n.investmentsTotalValue,
                                 style: theme.textTheme.bodySmall),
-                            MoneyText(total, style: theme.textTheme.titleLarge),
+                            MoneyTotalText(total, style: theme.textTheme.titleLarge),
                             const SizedBox(height: 4),
                             Row(
                               mainAxisSize: MainAxisSize.min,
@@ -130,20 +127,27 @@ class InvestmentsScreen extends ConsumerWidget {
     List<Color> chartColors,
     BuildContext context,
   ) {
-    final values = [
-      for (final i in items) toBase(ref, i.currentValue, from: i.currency),
-    ];
-    final total = values.fold<double>(0, (a, b) => a + b);
+    // Slice sizes are ratios, so a holding with no rate path to the base
+    // cannot be charted without silently charting its raw number as if it
+    // were base-currency. Those are dropped here and flagged by the totals.
+    final currency = ref.watch(currencyProvider);
+    final slices = <(int, double)>[];
+    for (var i = 0; i < items.length; i++) {
+      final value = convertWith(currency, items[i].currentValue,
+          from: items[i].currency);
+      if (value.converted) slices.add((i, value.amount));
+    }
+    final total = slices.fold<double>(0, (a, s) => a + s.$2);
     if (total <= 0) return [];
     return [
-      for (var i = 0; i < items.length; i++)
+      for (final (index, value) in slices)
         PieChartSectionData(
-          value: values[i],
-          color: chartColors[i % chartColors.length],
-          title: '${(values[i] / total * 100).toStringAsFixed(0)}%',
+          value: value,
+          color: chartColors[index % chartColors.length],
+          title: '${(value / total * 100).toStringAsFixed(0)}%',
           radius: 40,
           titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: foregroundFor(chartColors[i % chartColors.length]),
+                color: foregroundFor(chartColors[index % chartColors.length]),
               ),
         ),
     ];

@@ -385,6 +385,19 @@ class L10nEs extends L10n {
   String get budgetTargetField => 'Importe objetivo';
 
   @override
+  String get moneyPartialTotal => 'Total parcial';
+
+  @override
+  String moneyPartialTotalBody(String amount) {
+    return '$amount no se pudo convertir y no está incluido. Añade un tipo de cambio para incluirlo.';
+  }
+
+  @override
+  String moneyMissingRates(String currencies) {
+    return 'Sin tipo de cambio para $currencies';
+  }
+
+  @override
   String get budgetSavedField => 'Ahorrado hasta ahora';
 
   @override
