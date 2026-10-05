@@ -59,12 +59,30 @@ class Note {
         updatedAt: m['updated_at'] as int,
       );
 
-  /// Plain-text one-liner for list rows: markdown syntax is stripped when the
-  /// note is flagged as markdown so rows don't show raw `**` or `#`.
+  /// Full plain-text body. Markdown syntax is stripped when the note is
+  /// flagged as markdown, so list previews and search snippets show and match
+  /// words instead of raw `**` or `#`.
+  String get plainBody => isMarkdown ? stripMarkdown(body) : body;
+
+  /// Plain-text one-liner for list rows, truncated for display only.
   String get preview {
-    final text = isMarkdown ? stripMarkdown(body) : body.trim();
-    final trimmed = text.trim();
+    final trimmed = plainBody.trim();
     if (trimmed.isEmpty) return '';
     return trimmed.length > 80 ? '${trimmed.substring(0, 80)}…' : trimmed;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is Note &&
+      other.id == id &&
+      other.title == title &&
+      other.body == body &&
+      other.isFavorite == isFavorite &&
+      other.isMarkdown == isMarkdown &&
+      other.createdAt == createdAt &&
+      other.updatedAt == updatedAt;
+
+  @override
+  int get hashCode =>
+      Object.hash(id, title, body, isFavorite, isMarkdown, createdAt, updatedAt);
 }

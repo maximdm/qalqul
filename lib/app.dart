@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qalqul/core/theme.dart';
 import 'package:qalqul/features/calculator/calculator_provider.dart';
 import 'package:qalqul/features/calculator/calculator_screen.dart';
 import 'package:qalqul/features/finance/finance_screen.dart';
+import 'package:qalqul/features/finance/reminder_service.dart';
 import 'package:qalqul/features/home/home_screen.dart';
 import 'package:qalqul/features/notes/note_editor_screen.dart';
 import 'package:qalqul/features/notes/notes_screen.dart';
@@ -112,6 +115,16 @@ class _AppShellState extends ConsumerState<_AppShell> {
       if (next == null) return;
       _handleShortcut(next);
       ref.read(pendingShortcutProvider.notifier).consume();
+    });
+
+    // Reminders are scheduled outside the widget tree, so the service has to be
+    // handed the resolved localizations or its notifications stay in the
+    // device language. Re-runs whenever the locale setting changes.
+    ref.listen(localeProvider, (_, _) {
+      unawaited(ReminderService.configure(context.l10n));
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(ReminderService.configure(context.l10n));
     });
 
     if (!ref.watch(settingsReadyProvider)) {

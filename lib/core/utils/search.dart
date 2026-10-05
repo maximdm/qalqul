@@ -9,6 +9,12 @@ class SearchResult {
   final String id;
   final String title;
   final String subtitle;
+
+  /// Extra text that is matched by [filterResults] but never rendered. Lets a
+  /// row keep a short display subtitle while remaining searchable in full —
+  /// notes, for example, are matched against the whole body rather than the
+  /// 80-character preview shown in the result list.
+  final String searchText;
   final Map<String, dynamic> payload;
 
   const SearchResult({
@@ -16,6 +22,7 @@ class SearchResult {
     required this.id,
     required this.title,
     required this.subtitle,
+    this.searchText = '',
     required this.payload,
   });
 
@@ -25,11 +32,12 @@ class SearchResult {
       other.type == type &&
       other.id == id &&
       other.title == title &&
-      other.subtitle == subtitle;
+      other.subtitle == subtitle &&
+      other.searchText == searchText;
 
   @override
   int get hashCode =>
-      Object.hash(type, id, title, subtitle);
+      Object.hash(type, id, title, subtitle, searchText);
 }
 
 List<SearchResult> filterResults(List<SearchResult> all, String query) {
@@ -37,7 +45,8 @@ List<SearchResult> filterResults(List<SearchResult> all, String query) {
   if (q.isEmpty) return all;
   return all.where((r) {
     return r.title.toLowerCase().contains(q) ||
-        r.subtitle.toLowerCase().contains(q);
+        r.subtitle.toLowerCase().contains(q) ||
+        r.searchText.toLowerCase().contains(q);
   }).toList();
 }
 
@@ -52,6 +61,7 @@ Future<List<SearchResult>> globalSearch(String query) async {
       id: n.id!.toString(),
       title: n.title,
       subtitle: n.preview,
+      searchText: n.plainBody,
       payload: {'note': n.toMap()},
     ));
   }

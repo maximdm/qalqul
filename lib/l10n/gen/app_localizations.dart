@@ -865,6 +865,30 @@ abstract class L10n {
   /// **'due {date}'**
   String txRecurringDue(String date);
 
+  /// No description provided for @reminderDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due: {name}'**
+  String reminderDue(String name);
+
+  /// No description provided for @reminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{recurrence} · {amount}'**
+  String reminderBody(String recurrence, String amount);
+
+  /// No description provided for @reminderChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get reminderChannelName;
+
+  /// No description provided for @reminderChannelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring payment reminders'**
+  String get reminderChannelDescription;
+
   /// No description provided for @searchNoMatches.
   ///
   /// In en, this message translates to:

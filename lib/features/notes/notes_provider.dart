@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qalqul/core/models/note.dart';
 import 'package:qalqul/features/notes/notes_repository.dart';
@@ -28,7 +29,10 @@ class NotesNotifier extends Notifier<NotesState> {
 
   Future<void> _load() async {
     final notes = await _repo.getAll();
-    if (state.notes != notes) state = state.copyWith(notes: notes);
+    // Element-wise: `List ==` is identity-based, so comparing the lists
+    // directly would always report a change and rebuild every note consumer
+    // on each load.
+    if (!listEquals(state.notes, notes)) state = state.copyWith(notes: notes);
   }
 
   Future<void> add(Note note) async {

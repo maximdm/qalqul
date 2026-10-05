@@ -435,6 +435,22 @@ class L10nEn extends L10n {
   }
 
   @override
+  String reminderDue(String name) {
+    return 'Due: $name';
+  }
+
+  @override
+  String reminderBody(String recurrence, String amount) {
+    return '$recurrence · $amount';
+  }
+
+  @override
+  String get reminderChannelName => 'Reminders';
+
+  @override
+  String get reminderChannelDescription => 'Recurring payment reminders';
+
+  @override
   String get searchNoMatches => 'No matches';
 
   @override

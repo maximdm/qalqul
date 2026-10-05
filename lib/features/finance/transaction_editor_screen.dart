@@ -14,15 +14,19 @@ import 'package:qalqul/shared/widgets/date_field.dart';
 class TransactionEditorScreen extends ConsumerStatefulWidget {
   final String kind;
   final AppTransaction? transaction;
-  final String categoryLabel;
-  final String dateLabel;
+
+  /// Overrides for the category and date field labels. When omitted they are
+  /// derived from [kind] and the active locale, so the editor is never left
+  /// showing an English placeholder.
+  final String? categoryLabel;
+  final String? dateLabel;
 
   const TransactionEditorScreen({
     super.key,
     required this.kind,
     this.transaction,
-    this.categoryLabel = 'Category',
-    this.dateLabel = 'Date',
+    this.categoryLabel,
+    this.dateLabel,
   });
 
   @override
@@ -97,6 +101,11 @@ class _TransactionEditorScreenState extends ConsumerState<TransactionEditorScree
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final isCredit = widget.kind == 'credit';
+    final categoryLabel =
+        widget.categoryLabel ?? (isCredit ? l10n.creditLender : l10n.commonCategory);
+    final dateLabel =
+        widget.dateLabel ?? (isCredit ? l10n.creditDueDate : l10n.commonDate);
     return Scaffold(
       appBar: QalqulAppBar(
         title: widget.transaction == null ? l10n.txAddEntry : l10n.txEditEntry,
@@ -126,11 +135,11 @@ class _TransactionEditorScreenState extends ConsumerState<TransactionEditorScree
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: TextField(
                 controller: _category,
-                decoration: InputDecoration(labelText: widget.categoryLabel),
+                decoration: InputDecoration(labelText: categoryLabel),
               ),
             ),
             DateField(
-              label: widget.dateLabel,
+              label: dateLabel,
               value: _date,
               onPick: (d) => setState(() => _date = d),
             ),

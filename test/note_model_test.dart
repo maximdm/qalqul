@@ -77,4 +77,62 @@ void main() {
     expect(updated.isMarkdown, isTrue);
     expect(updated.body, 'b');
   });
+
+  group('plainBody', () {
+    test('strips markdown syntax from a markdown note', () {
+      const note = Note(
+        title: 'A',
+        body: '# Heading\n\nSome **bold** text',
+        isMarkdown: true,
+        createdAt: 1,
+        updatedAt: 1,
+      );
+      // Blank-line runs collapse to a single newline, as `stripMarkdown` does.
+      expect(note.plainBody, 'Heading\nSome bold text');
+    });
+
+    test('leaves a plain note untouched', () {
+      const note = Note(title: 'A', body: '**not** markdown',
+          createdAt: 1, updatedAt: 1);
+      expect(note.plainBody, '**not** markdown');
+    });
+
+    test('is not truncated, unlike preview', () {
+      final note = Note(
+        title: '',
+        body: '${'a' * 100}needle${'b' * 100}',
+        createdAt: 1,
+        updatedAt: 1,
+      );
+      expect(note.plainBody, contains('needle'));
+      expect(note.preview, isNot(contains('needle')));
+    });
+  });
+
+  group('value equality', () {
+    Note make() => Note(
+          id: 1,
+          title: 'A',
+          body: 'b',
+          isFavorite: true,
+          createdAt: 1,
+          updatedAt: 2,
+        );
+
+    test('two notes with identical fields are equal', () {
+      expect(make(), equals(make()));
+      expect(make().hashCode, make().hashCode);
+    });
+
+    test('differs when any field differs', () {
+      expect(make() == make().copyWith(body: 'other'), isFalse);
+      expect(make() == make().copyWith(title: 'other'), isFalse);
+      expect(make() == make().copyWith(isFavorite: false), isFalse);
+      expect(make() == make().copyWith(updatedAt: 99), isFalse);
+    });
+
+    test('is not equal to a non-Note', () {
+      expect(make() == Object(), isFalse);
+    });
+  });
 }

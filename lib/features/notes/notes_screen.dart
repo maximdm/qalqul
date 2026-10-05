@@ -22,7 +22,7 @@ class NotesScreen extends ConsumerWidget {
             .where(
               (n) =>
                   n.title.toLowerCase().contains(query) ||
-                  n.body.toLowerCase().contains(query),
+                  n.plainBody.toLowerCase().contains(query),
             )
             .toList();
 

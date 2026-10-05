@@ -192,6 +192,19 @@
   "@txRecurringDue": {
     "placeholders": { "date": { "type": "String" } }
   },
+  "reminderDue": "Due: {name}",
+  "@reminderDue": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "reminderBody": "{recurrence} · {amount}",
+  "@reminderBody": {
+    "placeholders": {
+      "recurrence": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  },
+  "reminderChannelName": "Reminders",
+  "reminderChannelDescription": "Recurring payment reminders",
 
   "searchNoMatches": "No matches",
   "shortcutNewCalculation": "New calculation",

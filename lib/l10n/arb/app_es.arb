@@ -143,6 +143,11 @@
   "txNextDue": "Próximo vencimiento",
   "txRecurringDue": "vence {date}",
 
+  "reminderDue": "Vence: {name}",
+  "reminderBody": "{recurrence} · {amount}",
+  "reminderChannelName": "Recordatorios",
+  "reminderChannelDescription": "Recordatorios de pagos recurrentes",
+
   "searchNoMatches": "Sin resultados",
   "shortcutNewCalculation": "Nuevo cálculo",
   "shortcutNewNote": "Nueva nota",

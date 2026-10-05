@@ -57,4 +57,59 @@ void main() {
     );
     expect(a, equals(b));
   });
+
+  group('searchText', () {
+    /// Stands in for a note result: the display subtitle is the truncated
+    /// 80-character preview, while `searchText` keeps the whole body.
+    SearchResult note() {
+      final body = '${'filler ' * 20}needle';
+      return SearchResult(
+        type: 'note',
+        id: '1',
+        title: 'Groceries',
+        subtitle: body.substring(0, 80),
+        searchText: body,
+        payload: const {},
+      );
+    }
+
+    test('matches text beyond the truncated subtitle', () {
+      expect(filterResults([note()], 'needle'), hasLength(1));
+    });
+
+    test('still matches title and subtitle', () {
+      expect(filterResults([note()], 'groceries'), hasLength(1));
+    });
+
+    test('is part of equality', () {
+      const a = SearchResult(
+        type: 'note',
+        id: '1',
+        title: 't',
+        subtitle: 's',
+        searchText: 'x',
+        payload: {},
+      );
+      const b = SearchResult(
+        type: 'note',
+        id: '1',
+        title: 't',
+        subtitle: 's',
+        searchText: 'y',
+        payload: {},
+      );
+      expect(a, isNot(equals(b)));
+    });
+
+    test('defaults to empty so existing callers are unaffected', () {
+      const r = SearchResult(
+        type: 'note',
+        id: '1',
+        title: 't',
+        subtitle: 's',
+        payload: {},
+      );
+      expect(r.searchText, isEmpty);
+    });
+  });
 }
