@@ -37,7 +37,8 @@ class CreditScreen extends ConsumerWidget {
     final all = ref.watch(transactionsProvider);
     final credits = all.where((t) => t.kind == 'credit').toList();
     final theme = Theme.of(context);
-    final owed = sumRecords(ref, credits, (t) => t.currency, (t) => t.amount);
+    final owed =
+        sumRecords(ref, credits, (t) => t.currency, (t) => t.amountMinor);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -80,7 +81,7 @@ class CreditScreen extends ConsumerWidget {
                     child: ListTile(
                       title: Text(t.category.isEmpty ? l10n.creditLender : t.category),
                       subtitle: _txSubtitle(context, t),
-                      trailing: MoneyText(t.amount, from: t.currency),
+                      trailing: MoneyText(t.amountMinor, from: t.currency),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => TransactionEditorScreen(

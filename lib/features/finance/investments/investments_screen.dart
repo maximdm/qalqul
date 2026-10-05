@@ -22,11 +22,13 @@ class InvestmentsScreen extends ConsumerWidget {
     // Totals combine holdings across currencies, so they are built with
     // `sumRecords`: anything without an FX path is reported rather than added
     // in its original units.
-    final total = sumRecords(ref, investments, (i) => i.currency, (i) => i.currentValue);
+    final total = sumRecords(
+        ref, investments, (i) => i.currency, (i) => i.currentValueMinor);
     final principal =
-        sumRecords(ref, investments, (i) => i.currency, (i) => i.principal);
-    final gain = total.amount - principal.amount;
-    final pct = principal.amount > 0 ? (gain / principal.amount) * 100 : 0.0;
+        sumRecords(ref, investments, (i) => i.currency, (i) => i.principalMinor);
+    final gain = total.minor - principal.minor;
+    final pct =
+        principal.minor > 0 ? (gain / principal.minor) * 100 : 0.0;
 
     final theme = Theme.of(context);
     final chartColors = chartColorsOf(theme.colorScheme);
@@ -103,9 +105,10 @@ class InvestmentsScreen extends ConsumerWidget {
                     child: ListTile(
                       title: Text(i.name),
                       subtitle: Text(
-                        '${l10n.investmentsPrincipal(formatInBase(ref, i.principal, from: i.currency))} · ${_date(i.asOf)}',
+                        '${l10n.investmentsPrincipal(formatInBase(ref, i.principalMinor, from: i.currency))} · ${_date(i.asOf)}',
                       ),
-                      trailing: MoneyText(i.currentValue, from: i.currency),
+                      trailing:
+                          MoneyText(i.currentValueMinor, from: i.currency),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => InvestmentEditorScreen(investment: i),
@@ -133,9 +136,9 @@ class InvestmentsScreen extends ConsumerWidget {
     final currency = ref.watch(currencyProvider);
     final slices = <(int, double)>[];
     for (var i = 0; i < items.length; i++) {
-      final value = convertWith(currency, items[i].currentValue,
+      final value = convertWith(currency, items[i].currentValueMinor,
           from: items[i].currency);
-      if (value.converted) slices.add((i, value.amount));
+      if (value.converted) slices.add((i, value.decimal));
     }
     final total = slices.fold<double>(0, (a, s) => a + s.$2);
     if (total <= 0) return [];

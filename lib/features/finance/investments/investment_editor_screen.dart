@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qalqul/core/models/investment.dart';
+import 'package:qalqul/core/utils/money.dart';
 import 'package:qalqul/features/finance/investments_provider.dart';
 import 'package:qalqul/l10n/l10n.dart';
 import 'package:qalqul/shared/providers/settings_provider.dart';
@@ -31,8 +32,8 @@ class _InvestmentEditorScreenState extends ConsumerState<InvestmentEditorScreen>
     final i = widget.investment;
     if (i != null) {
       _name.text = i.name;
-      _principal.text = i.principal.toString();
-      _value.text = i.currentValue.toString();
+      _principal.text = minorToEditable(i.principalMinor, _currency);
+      _value.text = minorToEditable(i.currentValueMinor, _currency);
       _asOf = DateTime.fromMillisecondsSinceEpoch(i.asOf);
     }
   }
@@ -49,8 +50,8 @@ class _InvestmentEditorScreenState extends ConsumerState<InvestmentEditorScreen>
     final l10n = context.l10n;
     final inv = Investment(
       name: _name.text.trim().isEmpty ? l10n.investmentsDefaultName : _name.text.trim(),
-      principal: double.tryParse(_principal.text) ?? 0,
-      currentValue: double.tryParse(_value.text) ?? 0,
+      principalMinor: parseMinor(_principal.text, _currency) ?? 0,
+      currentValueMinor: parseMinor(_value.text, _currency) ?? 0,
       asOf: _asOf.millisecondsSinceEpoch,
       currency: _currency,
     );

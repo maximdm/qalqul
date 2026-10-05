@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qalqul/core/models/budget.dart';
+import 'package:qalqul/core/utils/money.dart';
 import 'package:qalqul/features/finance/budgets_provider.dart';
 import 'package:qalqul/l10n/l10n.dart';
 import 'package:qalqul/shared/providers/settings_provider.dart';
@@ -31,8 +32,8 @@ class _BudgetEditorScreenState extends ConsumerState<BudgetEditorScreen> {
     final b = widget.budget;
     if (b != null) {
       _name.text = b.name;
-      _target.text = b.targetAmount.toString();
-      _saved.text = b.savedAmount.toString();
+      _target.text = minorToEditable(b.targetMinor, _currency);
+      _saved.text = minorToEditable(b.savedMinor, _currency);
       _category.text = b.category;
       _deadline = DateTime.fromMillisecondsSinceEpoch(b.deadline);
     }
@@ -51,8 +52,8 @@ class _BudgetEditorScreenState extends ConsumerState<BudgetEditorScreen> {
     final l10n = context.l10n;
     final b = Budget(
       name: _name.text.trim().isEmpty ? l10n.budgetDefaultName : _name.text.trim(),
-      targetAmount: double.tryParse(_target.text) ?? 0,
-      savedAmount: double.tryParse(_saved.text) ?? 0,
+      targetMinor: parseMinor(_target.text, _currency) ?? 0,
+      savedMinor: parseMinor(_saved.text, _currency) ?? 0,
       deadline: _deadline.millisecondsSinceEpoch,
       category: _category.text.trim(),
       currency: _currency,

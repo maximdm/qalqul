@@ -1,4 +1,5 @@
 import 'package:qalqul/core/db/database_helper.dart';
+import 'package:qalqul/core/utils/money.dart';
 import 'package:qalqul/features/finance/budgets_repository.dart';
 import 'package:qalqul/features/finance/investments_repository.dart';
 import 'package:qalqul/features/finance/transactions_repository.dart';
@@ -72,7 +73,9 @@ Future<List<SearchResult>> globalSearch(String query) async {
       type: 'transaction',
       id: t.id!.toString(),
       title: t.category.isEmpty ? t.kind : t.category,
-      subtitle: '${t.kind} · ${t.amount} ${t.note}',
+      subtitle: '${t.kind} · '
+          '${formatMoney(toDecimal(t.amountMinor, t.currency), currency: t.currency)}'
+          ' ${t.note}',
       payload: {'transaction': t.toMap()},
     ));
   }
@@ -83,7 +86,8 @@ Future<List<SearchResult>> globalSearch(String query) async {
       type: 'investment',
       id: i.id!.toString(),
       title: i.name,
-      subtitle: 'Principal ${i.principal} · Value ${i.currentValue}',
+      subtitle: 'Principal ${formatMoney(toDecimal(i.principalMinor, i.currency), currency: i.currency)}'
+          ' · Value ${formatMoney(toDecimal(i.currentValueMinor, i.currency), currency: i.currency)}',
       payload: {'investment': i.toMap()},
     ));
   }
@@ -94,7 +98,8 @@ Future<List<SearchResult>> globalSearch(String query) async {
       type: 'budget',
       id: b.id!.toString(),
       title: b.name,
-      subtitle: 'Target ${b.targetAmount} · Saved ${b.savedAmount}',
+      subtitle: 'Target ${formatMoney(toDecimal(b.targetMinor, b.currency), currency: b.currency)}'
+          ' · Saved ${formatMoney(toDecimal(b.savedMinor, b.currency), currency: b.currency)}',
       payload: {'budget': b.toMap()},
     ));
   }

@@ -3,16 +3,18 @@ import 'package:qalqul/core/utils/money.dart';
 class Investment {
   final int? id;
   final String name;
-  final double principal;
-  final double currentValue;
+
+  /// Cost basis and current market value, in minor units of [currency].
+  final int principalMinor;
+  final int currentValueMinor;
   final int asOf;
   final String currency;
 
   const Investment({
     this.id,
     required this.name,
-    required this.principal,
-    required this.currentValue,
+    required this.principalMinor,
+    required this.currentValueMinor,
     required this.asOf,
     this.currency = defaultCurrency,
   });
@@ -20,30 +22,34 @@ class Investment {
   Investment copyWith({
     int? id,
     String? name,
-    double? principal,
-    double? currentValue,
+    int? principalMinor,
+    int? currentValueMinor,
     int? asOf,
     String? currency,
   }) {
     return Investment(
       id: id ?? this.id,
       name: name ?? this.name,
-      principal: principal ?? this.principal,
-      currentValue: currentValue ?? this.currentValue,
+      principalMinor: principalMinor ?? this.principalMinor,
+      currentValueMinor: currentValueMinor ?? this.currentValueMinor,
       asOf: asOf ?? this.asOf,
       currency: currency ?? this.currency,
     );
   }
 
-  double get returnAmount => currentValue - principal;
+  /// Gain in minor units of the holding's own currency.
+  int get returnMinor => currentValueMinor - principalMinor;
 
-  double get returnPct => principal > 0 ? returnAmount / principal * 100 : 0;
+  /// Percentage gain. Both terms share a currency, so the ratio is exact even
+  /// though it is computed in floating point.
+  double get returnPct =>
+      principalMinor > 0 ? returnMinor / principalMinor * 100 : 0;
 
   Map<String, Object?> toMap() => {
         'id': id,
         'name': name,
-        'principal': principal,
-        'current_value': currentValue,
+        'principal_minor': principalMinor,
+        'current_value_minor': currentValueMinor,
         'as_of': asOf,
         'currency': currency,
       };
@@ -51,8 +57,8 @@ class Investment {
   factory Investment.fromMap(Map<String, Object?> m) => Investment(
         id: m['id'] as int?,
         name: m['name'] as String,
-        principal: (m['principal'] as num).toDouble(),
-        currentValue: (m['current_value'] as num).toDouble(),
+        principalMinor: (m['principal_minor'] as num).toInt(),
+        currentValueMinor: (m['current_value_minor'] as num).toInt(),
         asOf: m['as_of'] as int,
         currency: (m['currency'] as String?) ?? defaultCurrency,
       );

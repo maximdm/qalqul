@@ -3,12 +3,13 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
+import 'package:qalqul/core/utils/money.dart';
 import 'package:sqflite_common_ffi/sqflite_common_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 class DatabaseHelper {
   static const _dbName = 'qalqul.db';
-  static const _dbVersion = 5;
+  static const _dbVersion = 6;
 
   DatabaseHelper._();
   static final DatabaseHelper instance = DatabaseHelper._();
@@ -33,6 +34,34 @@ class DatabaseHelper {
       version: _dbVersion,
       onCreate: instance._onCreate,
     );
+  }
+
+  /// Test-only hook: open the database file at [path] through the real app
+  /// entry point, [_onCreate]/[_onUpgrade] included.
+  ///
+  /// A migration can only be tested by upgrading a file that already holds an
+  /// older schema, and an in-memory database cannot survive being closed. Tests
+  /// seed a v5 file with [openDatabase] and then hand the path here to let the
+  /// app's own upgrade path run against it.
+  @visibleForTesting
+  static Future<void> useDatabaseAt(String path) async {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+    instance._database = await openDatabase(
+      path,
+      version: _dbVersion,
+      onCreate: instance._onCreate,
+      onUpgrade: instance._onUpgrade,
+    );
+  }
+
+  /// Test-only hook: close the open database and forget the cached handle, so a
+  /// test can delete the file behind it or point the singleton at another one.
+  @visibleForTesting
+  static Future<void> closeTestDatabase() async {
+    final open = instance._database;
+    instance._database = null;
+    await open?.close();
   }
 
   Future<Database> _init() async {
@@ -106,6 +135,75 @@ class DatabaseHelper {
       await _createFxRates(db);
       await _createAppSettings(db);
     }
+    if (oldVersion < 6) {
+      await _migrateMoneyToMinorUnits(db);
+    }
+  }
+
+  /// Multiplier SQL yielding a row's minor-unit scale from its currency.
+  ///
+  /// Generated from [supportedCurrencies] rather than written out by hand: a
+  /// currency with a different number of fraction digits (JPY has none) must not
+  /// be scaled by 100 during a migration, and hardcoding that would let the two
+  /// lists drift apart silently.
+  String _scaleCaseSql() {
+    final clauses = <String>[
+      for (final c in supportedCurrencies)
+        if (c.scale != 100) "WHEN '${c.code}' THEN ${c.scale}",
+    ];
+    return 'CASE UPPER(currency) ${clauses.join(' ')} ELSE 100 END';
+  }
+
+  /// Rewrites the money columns from decimal `REAL` to integer minor units.
+  ///
+  /// SQLite cannot change a declared column type, and the multiplier differs per
+  /// currency, so each table is rebuilt and copied through a scale-aware
+  /// expression. `onUpgrade` runs inside a transaction, so a failure anywhere
+  /// here leaves the old tables untouched.
+  ///
+  /// Written out per table rather than looped over a description: the column
+  /// lists differ enough that a generic version needed more scaffolding than it
+  /// saved.
+  Future<void> _migrateMoneyToMinorUnits(Database db) async {
+    final scale = _scaleCaseSql();
+
+    await db.execute('DROP TABLE IF EXISTS transactions_v6');
+    await _createTransactions(db, table: 'transactions_v6');
+    await db.execute('''
+      INSERT INTO transactions_v6
+        (id, kind, amount_minor, category, date, note,
+         is_recurring, recurrence, next_due, currency)
+      SELECT id, kind, CAST(ROUND(amount * $scale) AS INTEGER), category, date,
+             note, is_recurring, recurrence, next_due, currency
+      FROM transactions
+    ''');
+    await db.execute('DROP TABLE transactions');
+    await db.execute('ALTER TABLE transactions_v6 RENAME TO transactions');
+
+    await db.execute('DROP TABLE IF EXISTS investments_v6');
+    await _createInvestments(db, table: 'investments_v6');
+    await db.execute('''
+      INSERT INTO investments_v6
+        (id, name, principal_minor, current_value_minor, as_of, currency)
+      SELECT id, name, CAST(ROUND(principal * $scale) AS INTEGER),
+             CAST(ROUND(current_value * $scale) AS INTEGER), as_of, currency
+      FROM investments
+    ''');
+    await db.execute('DROP TABLE investments');
+    await db.execute('ALTER TABLE investments_v6 RENAME TO investments');
+
+    await db.execute('DROP TABLE IF EXISTS budgets_v6');
+    await _createBudgets(db, table: 'budgets_v6');
+    await db.execute('''
+      INSERT INTO budgets_v6
+        (id, name, target_minor, saved_minor, deadline, category, currency)
+      SELECT id, name, CAST(ROUND(target_amount * $scale) AS INTEGER),
+             CAST(ROUND(saved_amount * $scale) AS INTEGER), deadline, category,
+             currency
+      FROM budgets
+    ''');
+    await db.execute('DROP TABLE budgets');
+    await db.execute('ALTER TABLE budgets_v6 RENAME TO budgets');
   }
 
   Future<void> _createNotes(Database db) async {
@@ -122,12 +220,12 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<void> _createTransactions(Database db) async {
+  Future<void> _createTransactions(Database db, {String table = 'transactions'}) async {
     await db.execute('''
-      CREATE TABLE transactions (
+      CREATE TABLE $table (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         kind TEXT NOT NULL,
-        amount REAL NOT NULL,
+        amount_minor INTEGER NOT NULL,
         category TEXT NOT NULL DEFAULT '',
         date INTEGER NOT NULL,
         note TEXT NOT NULL DEFAULT '',
@@ -139,26 +237,26 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<void> _createInvestments(Database db) async {
+  Future<void> _createInvestments(Database db, {String table = 'investments'}) async {
     await db.execute('''
-      CREATE TABLE investments (
+      CREATE TABLE $table (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        principal REAL NOT NULL,
-        current_value REAL NOT NULL,
+        principal_minor INTEGER NOT NULL,
+        current_value_minor INTEGER NOT NULL,
         as_of INTEGER NOT NULL,
         currency TEXT NOT NULL DEFAULT 'USD'
       )
     ''');
   }
 
-  Future<void> _createBudgets(Database db) async {
+  Future<void> _createBudgets(Database db, {String table = 'budgets'}) async {
     await db.execute('''
-      CREATE TABLE budgets (
+      CREATE TABLE $table (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        target_amount REAL NOT NULL,
-        saved_amount REAL NOT NULL DEFAULT 0,
+        target_minor INTEGER NOT NULL,
+        saved_minor INTEGER NOT NULL DEFAULT 0,
         deadline INTEGER NOT NULL,
         category TEXT NOT NULL DEFAULT '',
         currency TEXT NOT NULL DEFAULT 'USD'

@@ -10,7 +10,7 @@ import 'package:qalqul/l10n/l10n.dart';
 /// Falls back to the record's own currency when no FX rate connects the two, so
 /// a missing rate shows the original amount instead of a wrong conversion.
 class MoneyText extends ConsumerWidget {
-  final double amount;
+  final int minor;
   final String? from;
   final bool compact;
   final TextStyle? style;
@@ -19,7 +19,7 @@ class MoneyText extends ConsumerWidget {
   final bool showOriginalWhenConverted;
 
   const MoneyText(
-    this.amount, {
+    this.minor, {
     super.key,
     this.from,
     this.compact = false,
@@ -33,7 +33,7 @@ class MoneyText extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currency = ref.watch(currencyProvider);
     final source = (from ?? currency.base).toUpperCase();
-    final converted = convertWith(currency, amount, from: source);
+    final converted = convertWith(currency, minor, from: source);
     final fmt = compact ? formatMoneyCompact : formatMoney;
 
     // When the source differs from the display currency, show the converted
@@ -42,8 +42,8 @@ class MoneyText extends ConsumerWidget {
         converted.converted &&
         source != currency.base) {
       return Text(
-        '${fmt(converted.amount, currency: currency.base)}'
-        ' (${fmt(amount, currency: source)})',
+        '${fmt(converted.decimal, currency: currency.base)}'
+        ' (${fmt(toDecimal(minor, source), currency: source)})',
         style: style,
         textAlign: textAlign,
         maxLines: maxLines,
@@ -53,8 +53,8 @@ class MoneyText extends ConsumerWidget {
 
     return Text(
       converted.converted
-          ? fmt(converted.amount, currency: currency.base)
-          : fmt(amount, currency: source),
+          ? fmt(converted.decimal, currency: currency.base)
+          : fmt(toDecimal(minor, source), currency: source),
       style: style,
       textAlign: textAlign,
       maxLines: maxLines,
@@ -89,8 +89,8 @@ class MoneyTotalText extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final text = compact
-        ? formatMoneyCompact(total.amount, currency: total.currency)
-        : formatMoney(total.amount, currency: total.currency);
+        ? formatMoneyCompact(total.decimal, currency: total.currency)
+        : formatMoney(total.decimal, currency: total.currency);
     final label = Text(
       text,
       style: style,

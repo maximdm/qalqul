@@ -96,7 +96,7 @@ Future<bool> seedSampleData() async {
 
   await transactions.insert(AppTransaction(
     kind: 'credit',
-    amount: 3200,
+    amountMinor: toMinor(3200, defaultCurrency),
     category: 'Salary',
     date: daysAgo,
     note: 'Monthly income',
@@ -104,7 +104,7 @@ Future<bool> seedSampleData() async {
   ));
   await transactions.insert(AppTransaction(
     kind: 'spending',
-    amount: 24.5,
+    amountMinor: toMinor(24.5, defaultCurrency),
     category: 'Food',
     date: nowMs,
     note: 'Groceries',

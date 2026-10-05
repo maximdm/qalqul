@@ -101,16 +101,18 @@ void main() {
     ]);
 
     test('converts into the base currency', () {
-      final result = convertWith((base: 'USD', rates: usdTable), 10,
+      // €10.00 at 0.5 is $20.00.
+      final result = convertWith((base: 'USD', rates: usdTable), 1000,
           from: 'EUR');
       expect(result.converted, isTrue);
-      expect(result.amount, 20);
+      expect(result.minor, 2000);
+      expect(result.decimal, 20.0);
       expect(result.currency, 'USD');
     });
 
     test('defaults the source to the base currency', () {
-      final result = convertWith((base: 'EUR', rates: usdTable), 5);
-      expect(result.amount, 5);
+      final result = convertWith((base: 'EUR', rates: usdTable), 500);
+      expect(result.minor, 500);
       expect(result.converted, isTrue);
     });
 
@@ -118,13 +120,13 @@ void main() {
       final result =
           convertWith((base: 'JPY', rates: FxRates.empty), 100, from: 'GBP');
       expect(result.converted, isFalse);
-      expect(result.amount, 100);
+      expect(result.minor, 100);
       expect(result.currency, 'GBP');
     });
 
     test('is a no-op when the base has no rate path back', () {
       final currency = (base: 'ZWL', rates: FxRates.empty);
-      expect(convertWith(currency, 42, from: 'USD').amount, 42);
+      expect(convertWith(currency, 42, from: 'USD').minor, 42);
     });
   });
 
@@ -135,13 +137,15 @@ void main() {
       ]);
       final total = rates.sum(
         const [
-          (amount: 10.0, currency: 'USD'),
-          (amount: 20.0, currency: 'EUR'),
+          (minor: 1000, currency: 'USD'),
+          (minor: 2000, currency: 'EUR'),
         ],
         'USD',
         via: 'USD',
       );
-      expect(total.amount, 50); // 10 USD + (20 EUR / 0.5)
+      // $10.00 + (€20.00 / 0.5)
+      expect(total.minor, 5000);
+      expect(total.decimal, 50.0);
       expect(total.currency, 'USD');
       expect(total.isComplete, isTrue);
       expect(total.isEmpty, isFalse);
@@ -153,35 +157,35 @@ void main() {
       ]);
       final total = rates.sum(
         const [
-          (amount: 10.0, currency: 'USD'),
-          (amount: 99.0, currency: 'JPY'),
+          (minor: 1000, currency: 'USD'),
+          (minor: 9900, currency: 'JPY'),
         ],
         'USD',
         via: 'USD',
       );
-      // 99 JPY is absent from the total rather than silently added as 99 USD.
-      expect(total.amount, 10);
+      // ¥99 is absent from the total rather than silently added as $99.
+      expect(total.minor, 1000);
       expect(total.isComplete, isFalse);
-      expect(total.unconverted, {'JPY': 99.0});
+      expect(total.unconverted, {'JPY': 9900});
       expect(total.missingCurrencies, ['JPY']);
       expect(total.describeMissing(), contains('JPY'));
     });
 
     test('an empty input list yields an empty total', () {
       final total = FxRates.empty.sum(const [], 'USD');
-      expect(total.amount, 0);
+      expect(total.minor, 0);
       expect(total.isEmpty, isTrue);
       expect(total.isComplete, isTrue);
     });
 
     test('nothing convertible is not the same as nothing at all', () {
       final total =
-          FxRates.empty.sum(const [(amount: 5.0, currency: 'JPY')], 'USD');
-      expect(total.amount, 0);
-      // Zero convertible value, but the 5 JPY still has to be flagged.
+          FxRates.empty.sum(const [(minor: 500, currency: 'JPY')], 'USD');
+      expect(total.minor, 0);
+      // Zero convertible value, but the ¥5 still has to be flagged.
       expect(total.isEmpty, isFalse);
       expect(total.isComplete, isFalse);
-      expect(total.unconverted, {'JPY': 5.0});
+      expect(total.unconverted, {'JPY': 500});
     });
 
     test('minus keeps unconverted amounts from both sides', () {
@@ -189,13 +193,13 @@ void main() {
         FxRate(base: 'USD', quote: 'EUR', rate: 0.5, asOf: 1),
       ]);
       final assets = rates.sum(
-        const [(amount: 100.0, currency: 'USD'), (amount: 7.0, currency: 'JPY')],
+        const [(minor: 10000, currency: 'USD'), (minor: 700, currency: 'JPY')],
         'USD',
       );
-      final credit = rates.sum(const [(amount: 40.0, currency: 'USD')], 'USD');
+      final credit = rates.sum(const [(minor: 4000, currency: 'USD')], 'USD');
       final net = assets.minus(credit);
-      expect(net.amount, 60);
-      expect(net.unconverted, {'JPY': 7.0});
+      expect(net.minor, 6000);
+      expect(net.unconverted, {'JPY': 700});
       expect(net.isComplete, isFalse);
     });
   });

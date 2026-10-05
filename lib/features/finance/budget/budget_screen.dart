@@ -25,15 +25,17 @@ class BudgetScreen extends ConsumerWidget {
     // Spend is only meaningful over a period: sum the current month per category.
     // A currency with no rate path is skipped rather than added in its own
     // units, which would otherwise understate progress against the target.
+    // Kept in base-currency minor units so it divides directly against a
+    // converted target.
     final window = monthWindow(DateTime.now());
-    final spentByCategory = <String, double>{};
+    final spentByCategory = <String, int>{};
     for (final t in transactions.where((t) => t.kind == 'spending')) {
       if (!within(t.date, window)) continue;
-      final converted = convertWith(ref.watch(currencyProvider), t.amount,
+      final converted = convertWith(ref.watch(currencyProvider), t.amountMinor,
           from: t.currency);
       if (!converted.converted) continue;
       spentByCategory[t.category] =
-          (spentByCategory[t.category] ?? 0) + converted.amount;
+          (spentByCategory[t.category] ?? 0) + converted.minor;
     }
 
     return Scaffold(
@@ -80,7 +82,7 @@ class BudgetScreen extends ConsumerWidget {
                               _current(
                                   l10n, b, spentByCategory[b.category] ?? 0, ref),
                               MoneyText(
-                                b.targetAmount,
+                                b.targetMinor,
                                 from: b.currency,
                                 style: theme.textTheme.bodyMedium,
                               ),
@@ -98,12 +100,12 @@ class BudgetScreen extends ConsumerWidget {
     );
   }
 
-  Widget _progress(Budget b, double spent, WidgetRef ref) {
-    final target = toBase(ref, b.targetAmount, from: b.currency);
+  Widget _progress(Budget b, int spent, WidgetRef ref) {
+    final target = toBase(ref, b.targetMinor, from: b.currency);
     final value = b.category.isNotEmpty && target > 0
         ? (spent / target).clamp(0.0, 1.0)
         : (target > 0
-            ? (toBase(ref, b.savedAmount, from: b.currency) / target)
+            ? (toBase(ref, b.savedMinor, from: b.currency) / target)
                 .clamp(0.0, 1.0)
             : 0.0);
     return LinearProgressIndicator(
@@ -113,11 +115,11 @@ class BudgetScreen extends ConsumerWidget {
     );
   }
 
-  Widget _current(L10n l10n, Budget b, double spent, WidgetRef ref) {
+  Widget _current(L10n l10n, Budget b, int spent, WidgetRef ref) {
     if (b.category.isNotEmpty) {
       return Text(l10n.budgetSpent(formatInBase(ref, spent)));
     }
-    return MoneyText(b.savedAmount, from: b.currency);
+    return MoneyText(b.savedMinor, from: b.currency);
   }
 
   String _deadline(L10n l10n, int ms) {

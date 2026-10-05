@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qalqul/core/models/transaction.dart';
+import 'package:qalqul/core/utils/money.dart';
 import 'package:qalqul/features/finance/reminder_service.dart';
 import 'package:qalqul/features/finance/transactions_provider.dart';
 import 'package:qalqul/l10n/l10n.dart';
@@ -51,7 +52,7 @@ class _TransactionEditorScreenState extends ConsumerState<TransactionEditorScree
         ref.read(baseCurrencyProvider);
     final t = widget.transaction;
     if (t != null) {
-      _amount.text = t.amount.toString();
+      _amount.text = minorToEditable(t.amountMinor, _currency);
       _category.text = t.category;
       _note.text = t.note;
       _date = DateTime.fromMillisecondsSinceEpoch(t.date);
@@ -74,7 +75,7 @@ class _TransactionEditorScreenState extends ConsumerState<TransactionEditorScree
   Future<void> _save() async {
     final t = AppTransaction(
       kind: widget.kind,
-      amount: double.tryParse(_amount.text) ?? 0,
+      amountMinor: parseMinor(_amount.text, _currency) ?? 0,
       category: _category.text.trim(),
       date: _date.millisecondsSinceEpoch,
       note: _note.text.trim(),

@@ -19,6 +19,17 @@ class CurrencyInfo {
     required this.decimals,
     required this.label,
   });
+
+  /// Minor units per major unit: 100 for USD, 1 for JPY.
+  int get scale => _scaleFor(decimals);
+
+  static int _scaleFor(int decimals) {
+    var s = 1;
+    for (var i = 0; i < decimals; i++) {
+      s *= 10;
+    }
+    return s;
+  }
 }
 
 /// Currencies the app can display and store amounts in.
@@ -47,6 +58,96 @@ CurrencyInfo currencyInfo(String code) => supportedCurrencies.firstWhere(
 
 bool isSupportedCurrency(String code) =>
     supportedCurrencies.any((c) => c.code == code);
+
+/// Converts a decimal amount into integer minor units for [currency].
+///
+/// Money is stored and added as integers: `0.1 + 0.2` is `0.30000000000000004`
+/// in binary floating point, and a net-worth total that subtracts credit from
+/// assets compounds that error every time it is recomputed. Converting once, at
+/// the edge, keeps every stored figure exact.
+int toMinor(double amount, String currency) =>
+    (amount * currencyInfo(currency).scale).round();
+
+/// Converts integer minor units back to a decimal amount.
+///
+/// Only for the display boundary — charts, percentages, text fields. Arithmetic
+/// on money should stay in minor units.
+double toDecimal(int minor, String currency) =>
+    minor / currencyInfo(currency).scale;
+
+/// Parses a money amount typed by the user into minor units of [currency].
+///
+/// Returns `null` when the text isn't a number, letting callers keep their own
+/// "invalid input" message. A comma is accepted as the decimal separator because
+/// that is what a Spanish or German keyboard produces, and the app ships a
+/// Spanish translation.
+///
+/// The digits are scaled with integer arithmetic rather than by multiplying a
+/// double: `8.115 * 100` is `811.4999999999999` in binary floating point, which
+/// would silently round a typed `8.115` down to `$8.11` instead of `$8.12`.
+int? parseMinor(String text, String currency) {
+  final match =
+      RegExp(r'^([+-]?)([0-9]*)(?:\.([0-9]*))?$').firstMatch(_normalise(text));
+  if (match == null) return null;
+  final whole = match.group(2) ?? '';
+  final fraction = match.group(3) ?? '';
+  if (whole.isEmpty && fraction.isEmpty) return null;
+
+  try {
+    final digits = '$whole$fraction';
+    var minor = int.parse(digits.isEmpty ? '0' : digits);
+    final wanted = currencyInfo(currency).decimals;
+    if (fraction.length < wanted) {
+      minor *= _pow10(wanted - fraction.length);
+    } else if (fraction.length > wanted) {
+      // Drop the excess digits, rounding half up rather than truncating.
+      final divisor = _pow10(fraction.length - wanted);
+      final remainder = minor % divisor;
+      minor = minor ~/ divisor + (remainder * 2 >= divisor ? 1 : 0);
+    }
+    return match.group(1) == '-' ? -minor : minor;
+  } on FormatException {
+    // Absurdly long input; the double path is good enough to reject it.
+    final value = double.tryParse(_normalise(text));
+    return value == null ? null : toMinor(value, currency);
+  }
+}
+
+/// Normalises a money input for [parseMinor]: trimmed, with any thousands
+/// separators and a comma decimal point resolved.
+String _normalise(String text) {
+  var s = text.trim().replaceAll(',', '.');
+  if (s.contains('.')) {
+    // Keep only the last dot as the decimal point, so "1.234,56" style input
+    // still parses when the separators arrive in the other order.
+    final first = s.indexOf('.');
+    s = '${s.substring(0, first).replaceAll('.', '')}'
+        '${s.substring(first)}';
+  }
+  return s;
+}
+
+int _pow10(int exponent) {
+  var result = 1;
+  for (var i = 0; i < exponent; i++) {
+    result *= 10;
+  }
+  return result;
+}
+
+/// Renders minor units for an editable text field, without trailing zeros.
+///
+/// The inverse of [parseMinor]: `$12.50` in, `$12.5` out, rather than the
+/// `$12.5` that a raw `toString()` on the double would leave behind.
+String minorToEditable(int minor, String currency) {
+  final info = currencyInfo(currency);
+  if (info.decimals == 0) return minor.toString();
+  final text = toDecimal(minor, currency).toStringAsFixed(info.decimals);
+  if (!text.contains('.')) return text;
+  return text
+      .replaceFirst(RegExp(r'0+$'), '')
+      .replaceFirst(RegExp(r'\.$'), '');
+}
 
 /// Points `intl`'s formatters at [languageTag] (e.g. `es`, `en`).
 ///
@@ -81,39 +182,46 @@ String formatMoneyCompact(double v, {String currency = defaultCurrency}) {
   ).format(v);
 }
 
-/// An amount expressed in [currency].
+/// An amount held in [currency], as integer minor units.
 ///
 /// [converted] is `false` when the requested conversion could not be resolved
-/// with the available rates, in which case [amount] is the untouched original
+/// with the available rates, in which case [minor] is the untouched original
 /// and callers can show it verbatim rather than printing a wrong number.
 class MoneyAmount {
-  final double amount;
+  final int minor;
   final String currency;
   final bool converted;
 
-  const MoneyAmount(this.amount, this.currency, {this.converted = true});
+  const MoneyAmount(this.minor, this.currency, {this.converted = true});
 
-  String format() => formatMoney(amount, currency: currency);
+  /// Major units, for display and chart geometry only.
+  double get decimal => toDecimal(minor, currency);
+
+  String format() => formatMoney(decimal, currency: currency);
 }
 
 /// The result of combining amounts that may be held in several currencies.
 ///
-/// [amount] is expressed in [currency] and contains **only** the money that
-/// could be converted into it. Anything left out is reported in [unconverted],
-/// keyed by its original currency, so a partial total is visible instead of
-/// being padded with numbers from other currencies.
+/// [minor] is in [currency] and contains **only** the money that could be
+/// converted into it. Anything left out is reported in [unconverted], keyed by
+/// its original currency and held in that currency's own minor units, so a
+/// partial total is visible instead of being padded with numbers from other
+/// currencies.
 class MoneyTotal {
-  final double amount;
+  final int minor;
   final String currency;
 
   /// Source currency → amount that could not be converted into [currency].
-  final Map<String, double> unconverted;
+  final Map<String, int> unconverted;
 
   const MoneyTotal(
-    this.amount,
+    this.minor,
     this.currency, {
     this.unconverted = const {},
   });
+
+  /// Major units, for display only.
+  double get decimal => toDecimal(minor, currency);
 
   /// `true` when every contributing amount was convertible.
   bool get isComplete => unconverted.isEmpty;
@@ -121,7 +229,7 @@ class MoneyTotal {
   /// Subtracts [other] — expected to be in the same currency — carrying over
   /// anything either side could not convert.
   MoneyTotal minus(MoneyTotal other) => MoneyTotal(
-        amount - other.amount,
+        minor - other.minor,
         currency,
         unconverted: {...unconverted, ...other.unconverted},
       );
@@ -129,14 +237,14 @@ class MoneyTotal {
   /// Currencies that are missing from the total, sorted for stable display.
   List<String> get missingCurrencies => unconverted.keys.toList()..sort();
 
-  bool get isEmpty => amount == 0 && unconverted.isEmpty;
+  bool get isEmpty => minor == 0 && unconverted.isEmpty;
 
-  String format() => formatMoney(amount, currency: currency);
+  String format() => formatMoney(decimal, currency: currency);
 
   /// Single-line summary of what is missing, for tooltips and subtitles.
   String describeMissing() => missingCurrencies
       .map((code) =>
-          '${formatMoney(unconverted[code]!, currency: code)} $code')
+          '${formatMoney(toDecimal(unconverted[code]!, code), currency: code)} $code')
       .join(', ');
 }
 
@@ -173,14 +281,17 @@ class FxRates {
     return _byPair['$f/$t'];
   }
 
-  /// Converts [amount] from [from] into [to].
+  /// Converts [minor] from [from] into [to], both in their own minor units.
   ///
   /// Uses the direct pair when one is stored, otherwise walks the rate graph to
   /// find the fewest-hops path, so a chain such as `EUR/GBP` + `GBP/JPY` still
   /// reaches `EUR/JPY`. [via] is tried first when supplied.
+  ///
   /// Returns the original amount with `converted: false` when no path exists.
+  /// The result is rounded once, at the end, because an FX rate is only ever an
+  /// approximation and the target currency has a coarser grid than the source.
   MoneyAmount convert(
-    double amount,
+    int minor,
     String from,
     String to, {
     String? via,
@@ -188,8 +299,10 @@ class FxRates {
     final f = from.toUpperCase();
     final t = to.toUpperCase();
     final rate = _searchRate(f, t, via);
-    if (rate == null) return MoneyAmount(amount, f, converted: false);
-    return MoneyAmount(amount * rate, t);
+    if (rate == null) return MoneyAmount(minor, f, converted: false);
+    if (f == t) return MoneyAmount(minor, t);
+    final major = toDecimal(minor, f) * rate;
+    return MoneyAmount(toMinor(major, t), t);
   }
 
   /// Combines amounts held in several currencies into a single figure in [to].
@@ -197,22 +310,23 @@ class FxRates {
   /// Anything with no conversion path is left out of the total and reported in
   /// [MoneyTotal.unconverted], keyed by its own currency. A total is therefore
   /// never a sum of mismatched units: either a currency converted, or the gap
-  /// is visible.
+  /// is visible. The running total is an integer, so no rounding error
+  /// accumulates however many records are added.
   MoneyTotal sum(
-    Iterable<({double amount, String currency})> entries,
+    Iterable<({int minor, String currency})> entries,
     String to, {
     String? via,
   }) {
     final target = to.toUpperCase();
-    var total = 0.0;
-    final missing = <String, double>{};
+    var total = 0;
+    final missing = <String, int>{};
     for (final e in entries) {
-      final converted = convert(e.amount, e.currency, target, via: via);
+      final converted = convert(e.minor, e.currency, target, via: via);
       if (converted.converted) {
-        total += converted.amount;
+        total += converted.minor;
       } else {
         final code = converted.currency;
-        missing[code] = (missing[code] ?? 0) + converted.amount;
+        missing[code] = (missing[code] ?? 0) + converted.minor;
       }
     }
     return MoneyTotal(total, target, unconverted: Map.unmodifiable(missing));

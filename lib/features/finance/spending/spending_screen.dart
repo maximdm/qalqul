@@ -43,19 +43,20 @@ class SpendingScreen extends ConsumerWidget {
     final byCategory = <String, double>{};
     // Chart slices only make sense for amounts that actually converted, so a
     // currency with no rate path contributes no bar; [total] below is the one
-    // that reports the gap.
+    // that reports the gap. Decimal here because fl_chart wants doubles.
     for (final t in spending) {
       final converted = convertWith(
         ref.watch(currencyProvider),
-        t.amount,
+        t.amountMinor,
         from: t.currency,
       );
       if (!converted.converted) continue;
       byCategory[t.category] =
-          (byCategory[t.category] ?? 0) + converted.amount;
+          (byCategory[t.category] ?? 0) + converted.decimal;
     }
     final cats = byCategory.keys.toList();
-    final total = sumRecords(ref, spending, (t) => t.currency, (t) => t.amount);
+    final total =
+        sumRecords(ref, spending, (t) => t.currency, (t) => t.amountMinor);
     final chartColors = chartColorsOf(theme.colorScheme);
 
     return Scaffold(
@@ -162,7 +163,7 @@ class SpendingScreen extends ConsumerWidget {
                           Text(t.category.isEmpty ? l10n.spendingUncategorized : t.category),
                       subtitle: _txSubtitle(context, t),
                       trailing: MoneyText(
-                        -t.amount,
+                        -t.amountMinor,
                         from: t.currency,
                         style: const TextStyle(color: Colors.red),
                       ),

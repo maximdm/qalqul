@@ -3,7 +3,7 @@ import 'package:qalqul/core/utils/money.dart';
 class AppTransaction {
   final int? id;
   final String kind;
-  final double amount;
+  final int amountMinor;
   final String category;
   final int date;
   final String note;
@@ -15,7 +15,7 @@ class AppTransaction {
   const AppTransaction({
     this.id,
     required this.kind,
-    required this.amount,
+    required this.amountMinor,
     this.category = '',
     required this.date,
     this.note = '',
@@ -28,7 +28,7 @@ class AppTransaction {
   AppTransaction copyWith({
     int? id,
     String? kind,
-    double? amount,
+    int? amountMinor,
     String? category,
     int? date,
     String? note,
@@ -40,7 +40,7 @@ class AppTransaction {
     return AppTransaction(
       id: id ?? this.id,
       kind: kind ?? this.kind,
-      amount: amount ?? this.amount,
+      amountMinor: amountMinor ?? this.amountMinor,
       category: category ?? this.category,
       date: date ?? this.date,
       note: note ?? this.note,
@@ -54,7 +54,7 @@ class AppTransaction {
   Map<String, Object?> toMap() => {
         'id': id,
         'kind': kind,
-        'amount': amount,
+        'amount_minor': amountMinor,
         'category': category,
         'date': date,
         'note': note,
@@ -67,7 +67,7 @@ class AppTransaction {
   factory AppTransaction.fromMap(Map<String, Object?> m) => AppTransaction(
         id: m['id'] as int?,
         kind: m['kind'] as String,
-        amount: (m['amount'] as num).toDouble(),
+        amountMinor: (m['amount_minor'] as num).toInt(),
         category: m['category'] as String,
         date: m['date'] as int,
         note: m['note'] as String,

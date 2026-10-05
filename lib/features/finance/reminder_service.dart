@@ -110,7 +110,7 @@ class ReminderService {
       ),
       body: l10n.reminderBody(
         _recurrenceLabel(l10n, t.recurrence),
-        formatMoney(t.amount, currency: t.currency),
+        formatMoney(toDecimal(t.amountMinor, t.currency), currency: t.currency),
       ),
       scheduledDate: scheduled,
       notificationDetails: NotificationDetails(

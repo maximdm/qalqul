@@ -43,7 +43,7 @@ class UserWidgetCard extends ConsumerWidget {
     Iterable<T> items,
     WidgetRef ref,
     String Function(T) currencyOf,
-    double Function(T) amountOf,
+    int Function(T) amountOf,
   ) =>
       sumRecords(ref, items, currencyOf, amountOf);
 
@@ -78,12 +78,13 @@ class UserWidgetCard extends ConsumerWidget {
   Widget _financeOverview(BuildContext context, WidgetRef ref) {
     final inv = ref.watch(investmentsProvider);
     final tx = ref.watch(transactionsProvider);
-    final total = _sumInBase(inv, ref, (i) => i.currency, (i) => i.currentValue);
+    final total =
+        _sumInBase(inv, ref, (i) => i.currency, (i) => i.currentValueMinor);
     final credit = _sumInBase(
       tx.where((t) => t.kind == 'credit'),
       ref,
       (t) => t.currency,
-      (t) => t.amount,
+      (t) => t.amountMinor,
     );
     final l10n = context.l10n;
     return Column(
@@ -109,7 +110,7 @@ class UserWidgetCard extends ConsumerWidget {
       spending,
       ref,
       (t) => t.currency,
-      (t) => t.amount,
+      (t) => t.amountMinor,
     );
     final theme = Theme.of(context);
     return Column(
@@ -125,12 +126,13 @@ class UserWidgetCard extends ConsumerWidget {
   Widget _netWorth(BuildContext context, WidgetRef ref) {
     final inv = ref.watch(investmentsProvider);
     final tx = ref.watch(transactionsProvider);
-    final assets = _sumInBase(inv, ref, (i) => i.currency, (i) => i.currentValue);
+    final assets =
+        _sumInBase(inv, ref, (i) => i.currency, (i) => i.currentValueMinor);
     final credit = _sumInBase(
       tx.where((t) => t.kind == 'credit'),
       ref,
       (t) => t.currency,
-      (t) => t.amount,
+      (t) => t.amountMinor,
     );
     // A currency missing from either side makes the subtraction meaningless, so
     // `minus` carries the unconverted amounts through to the warning.
@@ -145,8 +147,8 @@ class UserWidgetCard extends ConsumerWidget {
         const SizedBox(height: 6),
         Text(
           context.l10n.widgetAssetsCredit(
-            formatInBase(ref, assets.amount),
-            formatInBase(ref, credit.amount),
+            formatInBase(ref, assets.minor),
+            formatInBase(ref, credit.minor),
           ),
           style: theme.textTheme.labelSmall,
         ),
@@ -167,7 +169,8 @@ class UserWidgetCard extends ConsumerWidget {
     if (entries.isEmpty) {
       return Text(context.l10n.widgetMonthSpendEmpty);
     }
-    final total = _sumInBase(entries, ref, (t) => t.currency, (t) => t.amount);
+    final total =
+        _sumInBase(entries, ref, (t) => t.currency, (t) => t.amountMinor);
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,12 +192,14 @@ class UserWidgetCard extends ConsumerWidget {
   Widget _portfolioValue(BuildContext context, WidgetRef ref) {
     final inv = ref.watch(investmentsProvider);
     if (inv.isEmpty) return Text(context.l10n.widgetPortfolioEmpty);
-    final value = _sumInBase(inv, ref, (i) => i.currency, (i) => i.currentValue);
-    final cost = _sumInBase(inv, ref, (i) => i.currency, (i) => i.principal);
+    final value =
+        _sumInBase(inv, ref, (i) => i.currency, (i) => i.currentValueMinor);
+    final cost =
+        _sumInBase(inv, ref, (i) => i.currency, (i) => i.principalMinor);
     // Gain and percentage come off the converted figures only; a holding with
     // no rate path is flagged on [value] instead of skewing the return.
-    final gain = value.amount - cost.amount;
-    final pct = cost.amount > 0 ? gain / cost.amount * 100 : 0.0;
+    final gain = value.minor - cost.minor;
+    final pct = cost.minor > 0 ? gain / cost.minor * 100 : 0.0;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Column(
@@ -264,7 +269,7 @@ class UserWidgetCard extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               MoneyText(
-                t.amount,
+                t.amountMinor,
                 from: t.currency,
                 style: theme.textTheme.bodySmall,
               ),

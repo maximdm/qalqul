@@ -6,6 +6,7 @@ import 'package:qalqul/core/models/fx_rate.dart';
 import 'package:qalqul/core/models/investment.dart';
 import 'package:qalqul/core/models/transaction.dart';
 import 'package:qalqul/core/models/user_widget.dart';
+import 'package:qalqul/core/utils/money.dart';
 import 'package:qalqul/features/finance/currency_provider.dart';
 import 'package:qalqul/features/finance/fx_rates_repository.dart';
 import 'package:qalqul/features/finance/investments_provider.dart';
@@ -48,11 +49,13 @@ void main() {
     fxRatesProvider.overrideWith(() => _FakeFxRates([_eurRate])),
   ];
 
+  /// [value] and [amount] are decimal amounts, as a person would read them;
+  /// the models take minor units.
   Investment holding(String name, double value, String currency) =>
       Investment(
         name: name,
-        principal: value,
-        currentValue: value,
+        principalMinor: toMinor(value, currency),
+        currentValueMinor: toMinor(value, currency),
         asOf: 1,
         currency: currency,
       );
@@ -60,7 +63,7 @@ void main() {
   AppTransaction tx(String kind, double amount, String currency) =>
       AppTransaction(
         kind: kind,
-        amount: amount,
+        amountMinor: toMinor(amount, currency),
         category: 'General',
         date: DateTime.now().millisecondsSinceEpoch,
         currency: currency,

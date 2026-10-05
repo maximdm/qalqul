@@ -58,47 +58,44 @@ final currencyProvider = Provider<({String base, FxRates rates})>((ref) {
   return (base: base, rates: rates);
 });
 
-/// Converts [amount] from [from] into the user's base currency.
+/// Converts [minor] from [from] into the user's base currency.
 ///
 /// Falls back to the unconverted amount when no rate path exists, so totals
 /// never silently mix currencies. [from] defaults to the base currency.
-double toBase(
+int toBase(
   WidgetRef ref,
-  double amount, {
+  int minor, {
   String? from,
 }) =>
-    convertWith(ref.watch(currencyProvider), amount, from: from).amount;
+    convertWith(ref.watch(currencyProvider), minor, from: from).minor;
 
-/// Converts and formats [amount] from [from] for display in the base currency.
+/// Converts and formats [minor] from [from] for display in the base currency.
 ///
 /// When no rate connects [from] to the base currency the original amount is
 /// formatted in its own currency instead of showing a wrong number.
 String formatInBase(
   WidgetRef ref,
-  double amount, {
+  int minor, {
   String? from,
   bool compact = false,
 }) {
   final currency = ref.watch(currencyProvider);
-  final converted = convertWith(currency, amount, from: from);
-  if (!converted.converted) {
-    return compact
-        ? formatMoneyCompact(amount, currency: converted.currency)
-        : formatMoney(amount, currency: converted.currency);
-  }
+  final converted = convertWith(currency, minor, from: from);
+  final code = converted.converted ? currency.base : converted.currency;
+  final amount = converted.converted ? converted.minor : minor;
   return compact
-      ? formatMoneyCompact(converted.amount, currency: converted.currency)
-      : formatMoney(converted.amount, currency: converted.currency);
+      ? formatMoneyCompact(toDecimal(amount, code), currency: code)
+      : formatMoney(toDecimal(amount, code), currency: code);
 }
 
 /// Pure conversion entry point (no widget dependency) so logic is testable.
 MoneyAmount convertWith(
   ({String base, FxRates rates}) currency,
-  double amount, {
+  int minor, {
   String? from,
 }) =>
     currency.rates.convert(
-      amount,
+      minor,
       (from ?? currency.base).toUpperCase(),
       currency.base,
       via: currency.base,
@@ -112,7 +109,7 @@ MoneyAmount convertWith(
 /// rate resolves.
 MoneyTotal sumInBase(
   WidgetRef ref,
-  Iterable<({double amount, String currency})> entries,
+  Iterable<({int minor, String currency})> entries,
 ) {
   final currency = ref.watch(currencyProvider);
   return currency.rates.sum(entries, currency.base, via: currency.base);
@@ -125,9 +122,9 @@ MoneyTotal sumRecords<T>(
   WidgetRef ref,
   Iterable<T> items,
   String Function(T) currencyOf,
-  double Function(T) amountOf,
+  int Function(T) amountOf,
 ) =>
     sumInBase(
       ref,
-      items.map((e) => (amount: amountOf(e), currency: currencyOf(e))),
+      items.map((e) => (minor: amountOf(e), currency: currencyOf(e))),
     );

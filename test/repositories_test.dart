@@ -95,14 +95,14 @@ void main() {
       final repo = TransactionsRepository();
       await repo.insert(AppTransaction(
         kind: 'spending',
-        amount: 10,
+        amountMinor: 1000,
         category: 'Food',
         date: 100,
         note: 'lunch',
       ));
       await repo.insert(AppTransaction(
         kind: 'credit',
-        amount: 50,
+        amountMinor: 5000,
         category: 'Lender',
         date: 200,
         note: 'loan',
@@ -111,19 +111,19 @@ void main() {
       expect(await repo.getAll(), hasLength(2));
       final credit = await repo.getByKind('credit');
       expect(credit, hasLength(1));
-      expect(credit.first.amount, 50);
+      expect(credit.first.amountMinor, 5000);
     });
 
     test('update then delete', () async {
       final repo = TransactionsRepository();
       await repo.insert(AppTransaction(
         kind: 'spending',
-        amount: 5,
+        amountMinor: 500,
         date: 1,
       ));
       final t = (await repo.getAll()).first;
-      await repo.update(t.copyWith(amount: 7));
-      expect((await repo.getAll()).first.amount, 7);
+      await repo.update(t.copyWith(amountMinor: 700));
+      expect((await repo.getAll()).first.amountMinor, 700);
 
       await repo.delete(t.id!);
       expect(await repo.getAll(), isEmpty);
@@ -133,7 +133,7 @@ void main() {
       final repo = TransactionsRepository();
       await repo.insert(AppTransaction(
         kind: 'credit',
-        amount: 20,
+        amountMinor: 2000,
         date: 1,
         isRecurring: true,
         recurrence: 'weekly',
@@ -152,19 +152,20 @@ void main() {
       final repo = TransactionsRepository();
       await repo.insert(AppTransaction(
         kind: 'spending',
-        amount: 10,
+        amountMinor: 1000,
         date: 1,
       ));
       await repo.insert(AppTransaction(
         kind: 'spending',
-        amount: 20,
+        amountMinor: 2000,
         currency: 'EUR',
         date: 2,
       ));
 
       final all = await repo.getAll();
-      expect(all.firstWhere((t) => t.amount == 10).currency, defaultCurrency);
-      expect(all.firstWhere((t) => t.amount == 20).currency, 'EUR');
+      expect(all.firstWhere((t) => t.amountMinor == 1000).currency,
+          defaultCurrency);
+      expect(all.firstWhere((t) => t.amountMinor == 2000).currency, 'EUR');
     });
   });
 
@@ -173,17 +174,17 @@ void main() {
       final repo = InvestmentsRepository();
       final id = await repo.insert(Investment(
         name: 'VTSAX',
-        principal: 1000,
-        currentValue: 1100,
+        principalMinor: 100000,
+        currentValueMinor: 110000,
         asOf: 1,
       ));
       expect(id, isNotNull);
 
       final inv = (await repo.getAll()).first;
-      await repo.update(inv.copyWith(currentValue: 1200));
+      await repo.update(inv.copyWith(currentValueMinor: 120000));
       final all = await repo.getAll();
-      expect(all.first.currentValue, 1200);
-      expect(all.first.returnAmount, 200);
+      expect(all.first.currentValueMinor, 120000);
+      expect(all.first.returnMinor, 20000);
 
       await repo.delete(id);
       expect(await repo.getAll(), isEmpty);
@@ -193,8 +194,8 @@ void main() {
       final repo = InvestmentsRepository();
       await repo.insert(Investment(
         name: 'IWDA',
-        principal: 500,
-        currentValue: 520,
+        principalMinor: 50000,
+        currentValueMinor: 52000,
         asOf: 1,
         currency: 'GBP',
       ));
@@ -207,16 +208,16 @@ void main() {
       final repo = BudgetsRepository();
       final id = await repo.insert(Budget(
         name: 'Laptop',
-        targetAmount: 1500,
-        savedAmount: 300,
+        targetMinor: 150000,
+        savedMinor: 30000,
         deadline: 500,
       ));
       expect(id, isNotNull);
 
       final b = (await repo.getAll()).first;
-      await repo.update(b.copyWith(savedAmount: 900));
+      await repo.update(b.copyWith(savedMinor: 90000));
       final all = await repo.getAll();
-      expect(all.first.savedAmount, 900);
+      expect(all.first.savedMinor, 90000);
       expect(all.first.progress, closeTo(0.6, 1e-9));
 
       await repo.delete(id);
@@ -227,8 +228,8 @@ void main() {
       final repo = BudgetsRepository();
       await repo.insert(Budget(
         name: 'Trip',
-        targetAmount: 900,
-        savedAmount: 100,
+        targetMinor: 90000,
+        savedMinor: 10000,
         deadline: 500,
         currency: 'JPY',
       ));
