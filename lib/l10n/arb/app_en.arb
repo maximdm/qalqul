@@ -1,0 +1,278 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Qalqul",
+  "@appTitle": { "description": "Application name" },
+
+  "navHome": "Home",
+  "navCalculator": "Calc",
+  "navNotes": "Notes",
+  "navFinance": "Finance",
+
+  "commonSave": "Save",
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonEdit": "Edit",
+  "commonDone": "Done",
+  "commonName": "Name",
+  "commonCategory": "Category",
+  "commonCurrency": "Currency",
+  "commonDate": "Date",
+  "commonDeadline": "Deadline",
+  "commonAmount": "Amount",
+  "commonNote": "Note",
+  "commonAdd": "Add",
+  "commonRetry": "Retry",
+  "commonSearch": "Search",
+
+  "homeNoWidgets": "No widgets yet",
+  "homeOpenStudio": "Open Widgets Studio",
+
+  "widgetsStudioTitle": "Widgets Studio",
+  "widgetsStudioEmpty": "No widgets yet — tap + to create one",
+  "widgetsNew": "New widget",
+  "widgetsEdit": "Edit widget",
+  "widgetsType": "Type",
+  "widgetsTitleField": "Title",
+  "widgetsSize": "Size",
+  "widgetsSizeSmall": "Small",
+  "widgetsSizeMedium": "Medium",
+  "widgetsSizeLarge": "Large",
+
+  "kindNoteSummary": "Recent notes",
+  "kindCalculator": "Quick calculator",
+  "kindFinanceOverview": "Finance overview",
+  "kindSpendingChart": "Spending chart",
+  "kindNetWorth": "Net worth",
+  "kindMonthSpend": "Month spend",
+  "kindPortfolioValue": "Portfolio value",
+  "kindBillsDue": "Bills due",
+
+  "widgetNoteEmpty": "No notes yet",
+  "widgetOpen": "Open",
+  "widgetInvested": "Invested {amount}",
+  "@widgetInvested": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "widgetCredit": "Credit {amount}",
+  "@widgetCredit": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "widgetSpent": "Spent",
+  "widgetAssetsCredit": "Assets {assets} · Credit {credit}",
+  "@widgetAssetsCredit": {
+    "placeholders": {
+      "assets": { "type": "String" },
+      "credit": { "type": "String" }
+    }
+  },
+  "widgetMonthSpend": "Spent this month",
+  "widgetMonthSpendEmpty": "No spending this month",
+  "widgetPortfolioEmpty": "No investments yet",
+  "widgetPortfolioValue": "Portfolio value",
+  "widgetPortfolioCount": "{count, plural, =0{No holdings} =1{1 holding} other{{count} holdings}}",
+  "@widgetPortfolioCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "widgetBillsEmpty": "Nothing due soon",
+  "widgetBillsDueIn": "Due in {days, plural, =1{1 day} other{{days} days}}",
+  "@widgetBillsDueIn": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "widgetBillsOverdue": "Overdue",
+  "widgetBillsWithin": "Within {days} days",
+  "@widgetBillsWithin": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "widgetLookaheadLabel": "Look ahead (days)",
+  "widgetMonthOffsetLabel": "Month offset",
+
+  "notesTitle": "Notes",
+  "notesSearchHint": "Search notes",
+  "notesEmpty": "No notes yet",
+  "notesUntitled": "Untitled",
+  "noteNew": "New note",
+  "noteEdit": "Edit note",
+  "noteTitleHint": "Title",
+  "noteBodyHint": "Write your note…  (type an expression then \" = \" to compute)",
+  "noteEvaluateTooltip": "Evaluate expression",
+  "noteTabEdit": "Edit",
+  "noteTabPreview": "Preview",
+  "noteMarkdownTooltip": "Markdown",
+  "notePreviewEmpty": "Nothing to preview yet",
+  "noteEvalNoTarget": "Place the cursor on an expression to evaluate",
+  "noteEvalFailed": "Couldn't evaluate that expression",
+  "noteAppended": "Appended to {title}",
+  "@noteAppended": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "noteNoNotesToAppend": "No notes yet — create one first",
+  "noteFromCalculation": "New note from calculation",
+  "noteAppendToExisting": "Append to note",
+  "noteCalculationTitle": "Calculation",
+
+  "calculatorTitle": "Calculator",
+  "calculatorSendToNote": "Send to note",
+  "calculatorClearHistory": "Clear history",
+  "calculatorHistory": "History",
+  "calculatorCopyResult": "Copy result",
+  "calculatorError": "Error",
+  "calculatorDegreesMode": "Degrees",
+  "calculatorScientificMode": "Scientific",
+  "calculatorNothingYet": "Calculate something first",
+  "calculatorMemory": "M = {value}",
+  "@calculatorMemory": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+
+  "financeTitle": "Finance",
+  "financeTabInvestments": "Investments",
+  "financeTabSpending": "Spending",
+  "financeTabCredit": "Credit",
+  "financeTabBudget": "Budget",
+ "financeReorderTabs": "Drag to reorder tabs",
+
+  "investmentsEmpty": "No investments yet",
+  "investmentsAdd": "Add investment",
+  "investmentsEdit": "Edit investment",
+  "investmentsTotalValue": "Total value",
+  "investmentsPrincipal": "Principal {amount}",
+  "@investmentsPrincipal": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "investmentsAsOf": "As of",
+  "investmentsName": "Name",
+  "investmentsPrincipalField": "Principal",
+  "investmentsCurrentValue": "Current value",
+  "investmentsDefaultName": "Investment",
+
+  "spendingEmpty": "No spending logged",
+  "spendingSpent": "Spent",
+  "spendingUncategorized": "Uncategorized",
+
+  "creditEmpty": "No credit tracked",
+  "creditOutstanding": "Outstanding credit",
+  "creditLender": "Lender",
+  "creditDueDate": "Due date",
+
+  "budgetEmpty": "No budgets yet",
+  "budgetAdd": "Add budget",
+  "budgetEdit": "Edit budget",
+  "budgetTargetField": "Target amount",
+  "budgetSavedField": "Saved so far",
+  "budgetDefaultName": "Goal",
+  "budgetSpent": "Spent {amount}",
+  "@budgetSpent": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "budgetDueIn": "Due in {days} days ({date})",
+  "@budgetDueIn": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+  "budgetOverdueBy": "Overdue by {days} days ({date})",
+  "@budgetOverdueBy": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+
+  "txAddEntry": "Add entry",
+  "txEditEntry": "Edit entry",
+  "txRecurring": "Recurring",
+  "txRepeat": "Repeat",
+  "txRepeatDaily": "Daily",
+  "txRepeatWeekly": "Weekly",
+  "txRepeatMonthly": "Monthly",
+  "txNextDue": "Next due",
+  "txRecurringDue": "due {date}",
+  "@txRecurringDue": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+
+  "searchNoMatches": "No matches",
+  "shortcutNewCalculation": "New calculation",
+  "shortcutNewNote": "New note",
+  "searchStartTyping": "Search notes, transactions, investments and budgets",
+  "searchFailed": "Search is unavailable right now",
+  "searchNoMatchesFor": "Nothing matches “{query}”",
+  "@searchNoMatchesFor": { "placeholders": { "query": { "type": "String" } } },
+  "searchMoreResults": "+{count} more — refine your search",
+  "@searchMoreResults": { "placeholders": { "count": { "type": "int" } } },
+  "searchGroupNotes": "Notes",
+  "searchGroupTransactions": "Transactions",
+  "searchGroupInvestments": "Investments",
+  "searchGroupBudgets": "Budgets",
+  "searchGroupOther": "Other",
+  "searchTitle": "Search",
+
+  "settingsTitle": "Settings",
+  "settingsAppearance": "Appearance",
+  "settingsThemeSystem": "System",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsCurrencySection": "Currency",
+  "settingsBaseCurrency": "Display currency",
+  "settingsBaseCurrencySubtitle": "Finance amounts are converted to this currency",
+  "settingsRates": "Exchange rates",
+  "settingsRatesSubtitle": "Manual rates — 1 unit of the base currency",
+  "settingsAddRate": "Add rate",
+  "settingsEditRate": "Edit rate",
+  "settingsRateEmpty": "No exchange rates yet",
+  "settingsRateFrom": "From",
+  "settingsRateTo": "To",
+  "settingsRateValue": "Rate",
+  "settingsRateInvalid": "Enter two different currencies and a rate above 0",
+  "settingsRateSame": "Pick two different currencies",
+  "settingsLanguage": "Language",
+  "settingsLanguageSystem": "System default",
+  "settingsSecurity": "Security",
+  "settingsAppLock": "App lock",
+  "settingsAppLockSubtitle": "Require biometrics when reopening Qalqul",
+  "settingsAppLockBiometricOnly": "Biometrics only",
+  "settingsAppLockBiometricOnlySubtitle": "Disallow the device passcode fallback",
+  "settingsAppLockGrace": "Lock after backgrounding",
+  "settingsReplayTour": "Replay intro tour",
+  "onboardingSkip": "Skip",
+  "onboardingNext": "Next",
+  "onboardingStart": "Get started",
+  "onboardingStartEmpty": "Start empty",
+  "onboardingWelcomeTitle": "Welcome to Qalqul",
+  "onboardingWelcomeBody": "A calculator, a notebook and your money in one place. Take a short tour — you can always replay it from Settings.",
+  "onboardingTrickTitle": "End a line with =",
+  "onboardingTrickBody": "Notes evaluate math while you type, and you can reuse earlier results as variables:",
+  "onboardingDashboardTitle": "Build your dashboard",
+  "onboardingDashboardBody": "Widgets, transactions and notes show up as cards on your home screen. We'll start with a few examples you can edit or delete.",
+  "settingsAppLockNow": "Lock now",
+  "settingsAppLockUnavailable": "No biometrics or screen lock is enrolled on this device",
+  "settingsBackup": "Backup & restore",
+  "settingsExportJson": "Export data (JSON)",
+  "settingsExportJsonSubtitle": "Save all notes, finance & widgets to a file",
+  "settingsImportJson": "Import data (JSON)",
+  "settingsImportJsonSubtitle": "Replace all data from a backup file",
+  "settingsExportCsv": "Export transactions (CSV)",
+  "settingsExportCsvSubtitle": "Save transactions to a spreadsheet file",
+  "settingsImportConfirmTitle": "Import backup?",
+  "settingsImportConfirmBody": "This replaces all current notes, finance data and widgets with the contents of the selected file.",
+  "settingsImport": "Import",
+  "settingsAbout": "About",
+  "settingsVersion": "Version {version}",
+  "@settingsVersion": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "settingsLegalese": "Free to publish · MIT/BSD dependencies",
+
+  "actionOk": "Done.",
+  "actionCancelled": "Cancelled.",
+  "actionBadFile": "Invalid backup file.",
+
+  "lockTitle": "Qalqul is locked",
+  "lockUnlock": "Unlock",
+  "lockFailed": "Unlock failed — try again",
+  "lockUnavailableTitle": "App lock unavailable",
+  "lockUnavailableBody": "Set up a screen lock or biometrics on this device to use app lock.",
+  "lockContinue": "Continue without lock"
+}
