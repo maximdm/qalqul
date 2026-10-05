@@ -59,7 +59,7 @@ class _InvestmentEditorScreenState extends ConsumerState<InvestmentEditorScreen>
     if (widget.investment == null) {
       await notifier.add(inv);
     } else {
-      await notifier.update(inv.copyWith(id: widget.investment!.id));
+      await notifier.save(inv.copyWith(id: widget.investment!.id));
     }
     if (mounted) Navigator.of(context).pop();
   }

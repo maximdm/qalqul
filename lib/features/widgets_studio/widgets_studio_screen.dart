@@ -5,14 +5,15 @@ import 'package:qalqul/features/widgets_studio/user_widgets_provider.dart';
 import 'package:qalqul/l10n/l10n.dart';
 import 'package:qalqul/shared/widgets/app_bar.dart';
 import 'package:qalqul/shared/widgets/empty_state.dart';
+import 'package:qalqul/shared/widgets/load_state_views.dart';
 
 class WidgetsStudioScreen extends ConsumerWidget {
   const WidgetsStudioScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final widgets = ref.watch(userWidgetsProvider);
     final l10n = context.l10n;
+    final widgets = ref.watch(userWidgetsProvider);
 
     return Scaffold(
       appBar: QalqulAppBar(title: l10n.widgetsStudioTitle),
@@ -21,22 +22,33 @@ class WidgetsStudioScreen extends ConsumerWidget {
         onPressed: () => _showEditor(context, ref),
         child: const Icon(Icons.add),
       ),
-      body: widgets.isEmpty
-          ? EmptyState(
-              icon: Icons.dashboard_customize_outlined,
-              title: l10n.widgetsStudioEmpty,
-            )
-          : ReorderableListView(
-              padding: const EdgeInsets.all(12),
-              onReorderItem: (key, to) {
-                final id = key is ValueKey ? (key as ValueKey).value : null;
-                final from = widgets.indexWhere((w) => w.id == id);
-                if (from >= 0) {
-                  ref.read(userWidgetsProvider.notifier).reorder(from, to);
-                }
-              },
-              children: [
-                for (final w in widgets)
+      body: widgets.when(
+        loading: () => const LoadingView(),
+        error: (error, _) => const LoadErrorView(),
+        data: (items) => _list(context, ref, items),
+      ),
+    );
+  }
+
+  Widget _list(
+      BuildContext context, WidgetRef ref, List<UserWidget> widgets) {
+    final l10n = context.l10n;
+    return widgets.isEmpty
+        ? EmptyState(
+            icon: Icons.dashboard_customize_outlined,
+            title: l10n.widgetsStudioEmpty,
+          )
+        : ReorderableListView(
+            padding: const EdgeInsets.all(12),
+            onReorderItem: (key, to) {
+              final id = key is ValueKey ? (key as ValueKey).value : null;
+              final from = widgets.indexWhere((w) => w.id == id);
+              if (from >= 0) {
+                ref.read(userWidgetsProvider.notifier).reorder(from, to);
+              }
+            },
+            children: [
+              for (final w in widgets)
                   Card(
                     key: ValueKey(w.id),
                     child: ListTile(
@@ -51,9 +63,8 @@ class WidgetsStudioScreen extends ConsumerWidget {
                           ref.read(userWidgetsProvider.notifier).delete(w.id!),
                     ),
                   ),
-              ],
-            ),
-    );
+            ],
+          );
   }
 
   String _sizeLabel(L10n l10n, String size) => switch (size) {
@@ -177,7 +188,7 @@ class WidgetsStudioScreen extends ConsumerWidget {
                   if (widget == null) {
                     notifier.add(w);
                   } else {
-                    notifier.update(w);
+                    notifier.save(w);
                   }
                   Navigator.of(ctx).pop();
                 },

@@ -10,6 +10,7 @@ import 'package:qalqul/features/finance/transactions_provider.dart';
 import 'package:qalqul/l10n/l10n.dart';
 import 'package:qalqul/shared/widgets/bento_card.dart';
 import 'package:qalqul/shared/widgets/empty_state.dart';
+import 'package:qalqul/shared/widgets/load_state_views.dart';
 import 'package:qalqul/shared/widgets/money_text.dart';
 
 class SpendingScreen extends ConsumerWidget {
@@ -34,9 +35,17 @@ class SpendingScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) => ref
+      .watch(transactionsProvider)
+      .when(
+        loading: () => const Scaffold(body: LoadingView()),
+        error: (error, _) => const Scaffold(body: LoadErrorView()),
+        data: (all) => _body(context, ref, all),
+      );
+
+  Widget _body(
+      BuildContext context, WidgetRef ref, List<AppTransaction> all) {
     final l10n = context.l10n;
-    final all = ref.watch(transactionsProvider);
     final spending = all.where((t) => t.kind == 'spending').toList();
     final theme = Theme.of(context);
 

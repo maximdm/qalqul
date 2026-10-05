@@ -10,15 +10,24 @@ import 'package:qalqul/features/finance/investments_provider.dart';
 import 'package:qalqul/l10n/l10n.dart';
 import 'package:qalqul/shared/widgets/bento_card.dart';
 import 'package:qalqul/shared/widgets/empty_state.dart';
+import 'package:qalqul/shared/widgets/load_state_views.dart';
 import 'package:qalqul/shared/widgets/money_text.dart';
 
 class InvestmentsScreen extends ConsumerWidget {
   const InvestmentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) => ref
+      .watch(investmentsProvider)
+      .when(
+        loading: () => const Scaffold(body: LoadingView()),
+        error: (error, _) => const Scaffold(body: LoadErrorView()),
+        data: (investments) => _body(context, ref, investments),
+      );
+
+  Widget _body(
+      BuildContext context, WidgetRef ref, List<Investment> investments) {
     final l10n = context.l10n;
-    final investments = ref.watch(investmentsProvider);
     // Totals combine holdings across currencies, so they are built with
     // `sumRecords`: anything without an FX path is reported rather than added
     // in its original units.

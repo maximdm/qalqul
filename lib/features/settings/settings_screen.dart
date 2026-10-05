@@ -16,6 +16,7 @@ import 'package:qalqul/l10n/l10n.dart';
 import 'package:qalqul/shared/providers/settings_provider.dart';
 import 'package:qalqul/shared/providers/shell_providers.dart';
 import 'package:qalqul/shared/widgets/app_bar.dart';
+import 'package:qalqul/shared/widgets/load_state_views.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -97,12 +98,41 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  /// Rows for the stored exchange rates.
+  ///
+  /// Kept apart from the settings body so the async load is handled here: a
+  /// rate table that has not loaded yet should not look exactly like a user who
+  /// has stored no rates.
+  List<Widget> _rateTiles(BuildContext context, WidgetRef ref) =>
+      ref.watch(fxRatesProvider).when(
+        loading: () => const [
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: LinearProgressIndicator(),
+          ),
+        ],
+        error: (error, _) => const [LoadErrorView()],
+        data: (rates) => [
+          for (final r in rates)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.currency_exchange, size: 18),
+              title: Text('1 ${r.base} = ${_rate(r.rate)} ${r.quote}'),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => ref.read(fxRatesProvider.notifier).delete(r.id!),
+              ),
+              onTap: () => _showRateEditor(context, ref, existing: r),
+            ),
+        ],
+      );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
     final l10n = context.l10n;
     final base = ref.watch(baseCurrencyProvider);
-    final rates = ref.watch(fxRatesProvider);
     final lockEnabled = ref.watch(appLockEnabledProvider);
     final biometricOnly = ref.watch(appLockBiometricOnlyProvider);
     final grace = ref.watch(appLockGraceSecondsProvider);
@@ -197,20 +227,7 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.add),
             onTap: () => _showRateEditor(context, ref),
           ),
-          if (rates.isNotEmpty)
-            for (final r in rates)
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.currency_exchange, size: 18),
-                title: Text('1 ${r.base} = ${_rate(r.rate)} ${r.quote}'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () =>
-                      ref.read(fxRatesProvider.notifier).delete(r.id!),
-                ),
-                onTap: () => _showRateEditor(context, ref, existing: r),
-              ),
+          ..._rateTiles(context, ref),
           const SizedBox(height: 24),
           Text(l10n.settingsSecurity,
               style: Theme.of(context).textTheme.titleSmall),

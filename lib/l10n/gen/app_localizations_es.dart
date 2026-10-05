@@ -67,6 +67,9 @@ class L10nEs extends L10n {
   String get commonRetry => 'Reintentar';
 
   @override
+  String get commonLoadFailed => 'No se pudieron cargar tus datos';
+
+  @override
   String get commonSearch => 'Buscar';
 
   @override

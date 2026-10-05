@@ -211,6 +211,12 @@ abstract class L10n {
   /// **'Retry'**
   String get commonRetry;
 
+  /// No description provided for @commonLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your data'**
+  String get commonLoadFailed;
+
   /// No description provided for @commonSearch.
   ///
   /// In en, this message translates to:

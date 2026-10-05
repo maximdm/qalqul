@@ -7,14 +7,14 @@ import 'package:qalqul/features/notes/notes_provider.dart';
 import 'package:qalqul/l10n/l10n.dart';
 import 'package:qalqul/shared/widgets/app_bar.dart';
 import 'package:qalqul/shared/widgets/empty_state.dart';
+import 'package:qalqul/shared/widgets/load_state_views.dart';
 
 class NotesScreen extends ConsumerWidget {
   const NotesScreen({super.key});
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  /// The note list for the current search text.
+  Widget _filtered(BuildContext context, NotesState state) {
     final l10n = context.l10n;
-    final state = ref.watch(notesProvider);
     final query = state.query.toLowerCase();
     final notes = query.isEmpty
         ? state.notes
@@ -25,6 +25,21 @@ class NotesScreen extends ConsumerWidget {
                   n.plainBody.toLowerCase().contains(query),
             )
             .toList();
+
+    return notes.isEmpty
+        ? EmptyState(
+            icon: Icons.note_alt_outlined,
+            title: l10n.notesEmpty,
+          )
+        : ListView.builder(
+            itemCount: notes.length,
+            itemBuilder: (_, i) => _NoteTile(note: notes[i]),
+          );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: QalqulAppBar(title: l10n.notesTitle),
@@ -40,16 +55,14 @@ class NotesScreen extends ConsumerWidget {
               onChanged: (v) => ref.read(notesProvider.notifier).setQuery(v),
             ),
           ),
+          // The search field stays usable while the notes load: a query typed
+          // now is kept by the notifier and applied when the load resolves.
           Expanded(
-            child: notes.isEmpty
-                ? EmptyState(
-                    icon: Icons.note_alt_outlined,
-                    title: l10n.notesEmpty,
-                  )
-                : ListView.builder(
-                    itemCount: notes.length,
-                    itemBuilder: (_, i) => _NoteTile(note: notes[i]),
-                  ),
+            child: ref.watch(notesProvider).when(
+              loading: () => const LoadingView(),
+              error: (error, _) => const LoadErrorView(),
+              data: (state) => _filtered(context, state),
+            ),
           ),
         ],
       ),

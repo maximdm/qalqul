@@ -3,37 +3,37 @@ import 'package:qalqul/core/models/budget.dart';
 import 'package:qalqul/features/finance/budgets_repository.dart';
 
 final budgetsProvider =
-    NotifierProvider<BudgetsNotifier, List<Budget>>(BudgetsNotifier.new);
+    AsyncNotifierProvider<BudgetsNotifier, List<Budget>>(BudgetsNotifier.new);
 
-class BudgetsNotifier extends Notifier<List<Budget>> {
+/// Stored budgets, loaded in `build()`. See [TransactionsNotifier] for why this
+/// is async rather than a `Notifier` that returns an empty list and loads
+/// behind the UI.
+class BudgetsNotifier extends AsyncNotifier<List<Budget>> {
   final _repo = BudgetsRepository();
 
   @override
-  List<Budget> build() {
-    _load();
-    return const [];
-  }
+  Future<List<Budget>> build() => _repo.getAll();
 
-  Future<void> _load() async {
+  /// Re-reads the table without passing through a loading state, so a write
+  /// does not blank the list that triggered it.
+  Future<void> _reload() async {
     final items = await _repo.getAll();
-    // The provider can be disposed while the query is in flight (screen
-    // teardown, a test container going away); writing state then throws.
     if (!ref.mounted) return;
-    state = items;
+    state = AsyncData(items);
   }
 
   Future<void> add(Budget b) async {
     await _repo.insert(b);
-    await _load();
+    await _reload();
   }
 
-  Future<void> update(Budget b) async {
+  Future<void> save(Budget b) async {
     await _repo.update(b);
-    await _load();
+    await _reload();
   }
 
   Future<void> delete(int id) async {
     await _repo.delete(id);
-    await _load();
+    await _reload();
   }
 }

@@ -185,7 +185,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     if (widget.note == null) {
       await ref.read(notesProvider.notifier).add(updated);
     } else {
-      await ref.read(notesProvider.notifier).update(updated);
+      await ref.read(notesProvider.notifier).save(updated);
     }
     if (mounted) Navigator.of(context).pop();
   }

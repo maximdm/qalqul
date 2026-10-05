@@ -21,6 +21,7 @@
   "commonNote": "Nota",
   "commonAdd": "Añadir",
   "commonRetry": "Reintentar",
+  "commonLoadFailed": "No se pudieron cargar tus datos",
   "commonSearch": "Buscar",
 
   "homeNoWidgets": "Aún no hay widgets",

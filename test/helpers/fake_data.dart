@@ -13,15 +13,19 @@ import 'package:qalqul/features/widgets_studio/user_widgets_provider.dart';
 
 /// Notifiers that render an empty, in-memory list instead of querying sqflite.
 ///
-/// The real ones kick off a `_load()` in `build()` and return `const []`, so a
-/// test that boots the app and then ends hits sqflite's 10-second
-/// `txnSynchronized` lock timer mid-flight and fails with "A Timer is still
-/// pending". Worse, the stray query can resolve against a provider the test
-/// already disposed. Tests that only exercise navigation or wiring don't care
-/// about stored data, so they should pay for none of this.
-mixin _EmptyData<T> on Notifier<List<T>> {
+/// The real ones query sqflite in `build()`, so a test that boots the app and
+/// then ends hits sqflite's 10-second `txnSynchronized` lock timer mid-flight and
+/// fails with "A Timer is still pending". Worse, the stray query can resolve
+/// against a provider the test already disposed. Tests that only exercise
+/// navigation or wiring don't care about stored data, so they should pay for
+/// none of this.
+///
+/// [build] is async for the same reason the real ones are: the return type is
+/// part of the `AsyncNotifier` contract, and a synchronous override would not
+/// compile. It resolves immediately, so nothing in a test has to await it.
+mixin _EmptyData<T> on AsyncNotifier<List<T>> {
   @override
-  List<T> build() => const [];
+  Future<List<T>> build() async => const [];
 }
 
 class FakeBudgets extends BudgetsNotifier with _EmptyData<Budget> {}
@@ -39,7 +43,7 @@ class FakeUserWidgets
 /// [NotesNotifier] is the odd one out: its state is a wrapper, not a list.
 class FakeNotes extends NotesNotifier {
   @override
-  NotesState build() => const NotesState();
+  Future<NotesState> build() async => const NotesState();
 }
 
 /// Overrides for every data-backed provider, for tests that boot the app but do

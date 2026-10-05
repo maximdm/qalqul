@@ -220,13 +220,14 @@ class CalculatorScreen extends ConsumerWidget {
     WidgetRef ref,
     String line,
   ) async {
+    // Awaited rather than read: the notes are still loading on a cold start, and
+    // treating that as "you have no notes" would send the user to create one.
+    final notes = (await ref.read(notesProvider.future)).notes;
+    if (!context.mounted) return;
     final l10n = context.l10n;
-    final notes = ref.read(notesProvider).notes;
     if (notes.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.noteNoNotesToAppend)));
-      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.noteNoNotesToAppend)));
       return;
     }
 
@@ -251,7 +252,7 @@ class CalculatorScreen extends ConsumerWidget {
       body: '${picked.body}\n$line'.trim(),
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
-    await ref.read(notesProvider.notifier).update(updated);
+    await ref.read(notesProvider.notifier).save(updated);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

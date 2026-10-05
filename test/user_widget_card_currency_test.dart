@@ -177,12 +177,16 @@ void main() {
 
 /// Minimal notifier overrides so the card renders from a fixed list without
 /// waiting on sqflite.
+///
+/// The `Future` return is part of the `AsyncNotifier` contract; each resolves
+/// immediately, and `pumpAndSettle` in the tests lets the `AsyncData` land
+/// before the card is asserted on.
 class _FakeInvestments extends InvestmentsNotifier {
   _FakeInvestments(this.items);
   final List<Investment> items;
 
   @override
-  List<Investment> build() => items;
+  Future<List<Investment>> build() async => items;
 }
 
 class _FakeTransactions extends TransactionsNotifier {
@@ -190,7 +194,7 @@ class _FakeTransactions extends TransactionsNotifier {
   final List<AppTransaction> items;
 
   @override
-  List<AppTransaction> build() => items;
+  Future<List<AppTransaction>> build() async => items;
 }
 
 class _FakeFxRates extends FxRatesNotifier {
@@ -198,5 +202,5 @@ class _FakeFxRates extends FxRatesNotifier {
   final List<FxRate> items;
 
   @override
-  List<FxRate> build() => items;
+  Future<List<FxRate>> build() async => items;
 }

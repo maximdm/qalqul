@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:qalqul/core/models/budget.dart';
+import 'package:qalqul/core/models/transaction.dart';
 import 'package:qalqul/core/utils/periods.dart';
 import 'package:qalqul/features/finance/budget/budget_editor_screen.dart';
 import 'package:qalqul/features/finance/budgets_provider.dart';
@@ -10,6 +11,7 @@ import 'package:qalqul/features/finance/transactions_provider.dart';
 import 'package:qalqul/l10n/l10n.dart';
 import 'package:qalqul/shared/widgets/bento_card.dart';
 import 'package:qalqul/shared/widgets/empty_state.dart';
+import 'package:qalqul/shared/widgets/load_state_views.dart';
 import 'package:qalqul/shared/widgets/money_text.dart';
 
 class BudgetScreen extends ConsumerWidget {
@@ -17,9 +19,26 @@ class BudgetScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
+    // Both tables feed this screen: the budgets are the list, the transactions
+    // are what progress is measured against. Both are async, so wait for each
+    // rather than rendering half a screen against an empty list.
     final budgets = ref.watch(budgetsProvider);
     final transactions = ref.watch(transactionsProvider);
+
+    return budgets.when(
+      loading: () => const Scaffold(body: LoadingView()),
+      error: (error, _) => const Scaffold(body: LoadErrorView()),
+      data: (b) => transactions.when(
+        loading: () => const Scaffold(body: LoadingView()),
+        error: (error, _) => const Scaffold(body: LoadErrorView()),
+        data: (t) => _body(context, ref, b, t),
+      ),
+    );
+  }
+
+  Widget _body(BuildContext context, WidgetRef ref, List<Budget> budgets,
+      List<AppTransaction> transactions) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
 
     // Spend is only meaningful over a period: sum the current month per category.

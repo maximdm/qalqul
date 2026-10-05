@@ -62,7 +62,7 @@ class _BudgetEditorScreenState extends ConsumerState<BudgetEditorScreen> {
     if (widget.budget == null) {
       await notifier.add(b);
     } else {
-      await notifier.update(b.copyWith(id: widget.budget!.id));
+      await notifier.save(b.copyWith(id: widget.budget!.id));
     }
     if (mounted) Navigator.of(context).pop();
   }

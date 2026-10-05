@@ -210,7 +210,7 @@ void main() {
       final notifier = c.read(fxRatesProvider.notifier);
       await notifier.upsert(base: 'USD', quote: 'USD', rate: 1);
       await notifier.upsert(base: 'USD', quote: 'EUR', rate: 0);
-      expect(c.read(fxRatesProvider), isEmpty);
+      expect(c.read(fxRatesProvider).requireValue, isEmpty);
     });
 
     test('persists a valid rate, upper-casing codes', () async {
@@ -218,7 +218,7 @@ void main() {
       await c
           .read(fxRatesProvider.notifier)
           .upsert(base: 'usd', quote: 'jpy', rate: 150);
-      final rates = c.read(fxRatesProvider);
+      final rates = c.read(fxRatesProvider).requireValue;
       expect(rates, hasLength(1));
       expect(rates.first.base, 'USD');
       expect(rates.first.quote, 'JPY');
@@ -230,7 +230,7 @@ void main() {
       final notifier = c.read(fxRatesProvider.notifier);
       await notifier.upsert(base: 'USD', quote: 'GBP', rate: 0.8);
       await notifier.upsert(base: 'USD', quote: 'GBP', rate: 0.79);
-      final rates = c.read(fxRatesProvider);
+      final rates = c.read(fxRatesProvider).requireValue;
       expect(rates, hasLength(1));
       expect(rates.first.rate, 0.79);
     });
@@ -239,8 +239,8 @@ void main() {
       final c = await container();
       final notifier = c.read(fxRatesProvider.notifier);
       await notifier.upsert(base: 'USD', quote: 'CHF', rate: 0.9);
-      await notifier.delete(c.read(fxRatesProvider).first.id!);
-      expect(c.read(fxRatesProvider), isEmpty);
+      await notifier.delete(c.read(fxRatesProvider).requireValue.first.id!);
+      expect(c.read(fxRatesProvider).requireValue, isEmpty);
       expect(c.read(fxTableProvider).isEmpty, isTrue);
     });
   });

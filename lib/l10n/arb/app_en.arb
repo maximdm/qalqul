@@ -23,6 +23,7 @@
   "commonNote": "Note",
   "commonAdd": "Add",
   "commonRetry": "Retry",
+  "commonLoadFailed": "Could not load your data",
   "commonSearch": "Search",
 
   "homeNoWidgets": "No widgets yet",

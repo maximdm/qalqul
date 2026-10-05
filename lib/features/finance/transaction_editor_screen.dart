@@ -88,7 +88,7 @@ class _TransactionEditorScreenState extends ConsumerState<TransactionEditorScree
     if (widget.transaction == null) {
       await notifier.add(t);
     } else {
-      await notifier.update(t.copyWith(id: widget.transaction!.id));
+      await notifier.save(t.copyWith(id: widget.transaction!.id));
     }
     // Turning a transaction into a recurring one is what makes a reminder
     // possible, so that's the moment to ask for the notification permissions.

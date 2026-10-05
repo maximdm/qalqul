@@ -6,21 +6,25 @@ import 'package:qalqul/features/finance/fx_rates_repository.dart';
 import 'package:qalqul/shared/providers/settings_provider.dart';
 
 final fxRatesProvider =
-    NotifierProvider<FxRatesNotifier, List<FxRate>>(FxRatesNotifier.new);
+    AsyncNotifierProvider<FxRatesNotifier, List<FxRate>>(FxRatesNotifier.new);
 
-class FxRatesNotifier extends Notifier<List<FxRate>> {
+/// Stored exchange rates, loaded in `build()`.
+///
+/// Async because the derived rate table is what every money figure on the
+/// dashboard depends on: with a synchronous empty list, the first frame
+/// rendered every total as unconverted before the rates landed.
+class FxRatesNotifier extends AsyncNotifier<List<FxRate>> {
   final _repo = FxRatesRepository();
 
   @override
-  List<FxRate> build() {
-    _load();
-    return const [];
-  }
+  Future<List<FxRate>> build() => _repo.getAll();
 
-  Future<void> _load() async {
+  /// Re-reads the table without passing through a loading state, so saving a
+  /// rate does not blank the form that saved it.
+  Future<void> _reload() async {
     final rates = await _repo.getAll();
     if (!ref.mounted) return;
-    state = rates;
+    state = AsyncData(rates);
   }
 
   Future<void> upsert({
@@ -36,19 +40,25 @@ class FxRatesNotifier extends Notifier<List<FxRate>> {
       rate: rate,
       asOf: asOf ?? DateTime.now().millisecondsSinceEpoch,
     ));
-    await _load();
+    await _reload();
   }
 
   Future<void> delete(int id) async {
     await _repo.delete(id);
-    await _load();
+    await _reload();
   }
 }
 
 /// The active rate table, rebuilt from [fxRatesProvider] whenever it changes.
+///
+/// Deliberately synchronous. It feeds [currencyProvider], which every money
+/// widget reads on each build, so threading an `AsyncValue` through it would
+/// spread a loading state into every figure on screen. While the rates load the
+/// table is empty, which means a multi-currency total briefly reports its
+/// amounts as unconverted rather than showing a confidently wrong number.
 final fxTableProvider = Provider<FxRates>((ref) {
   final rates = ref.watch(fxRatesProvider);
-  return FxRates.fromList(rates);
+  return FxRates.fromList(rates.value ?? const []);
 });
 
 /// Display currency plus the rates used to reach it.
